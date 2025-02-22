@@ -1,0 +1,6 @@
+.vs/
+bin/
+obj/
+package/*.dll
+package/*.zip
+__pycache__/
