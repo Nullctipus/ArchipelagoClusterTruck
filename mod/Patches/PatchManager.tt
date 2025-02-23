@@ -1,0 +1,38 @@
+<#// If you added a patch you can compile this file by changing the absolute paths #>
+<#@ output extension=".cs" #>
+<#@ template language="C#" #>
+<#//@ assembly name="$(SOLUTION_DIR)/bin/Debug/net35/ArchipelagoClusterTruck.dll/bin/Debug/net35/ArchipelagoClusterTruck.dll" #>
+<#//@ assembly name="$(GAME_DIR)/Clustertruck_Data/Managed/UnityEngine.dll" #>
+<#//@ assembly name="$(GAME_DIR)/mnt/ssd2/SteamLibrary/steamapps/common/ClusterTruck/BepInEx/core/BepInEx.dll" #>
+<#@ import namespace="ArchipelagoClusterTruck.Patches" #>
+<#@ import namespace="System.Linq" #>
+
+#nullable enable
+using System;
+using HarmonyLib;
+
+namespace ArchipelagoClusterTruck.Patches;
+
+public static class PatchManager {
+    public static void PatchAll(){
+        Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        Exception? e = null;
+        try{
+<#
+    var patchType = typeof(ClassPatch);
+    var assembly = patchType.Assembly;
+    var types =
+        assembly.GetTypes().Where(
+            x => patchType.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract && !x.IsGenericType);
+    foreach (var type in types)
+    {
+        WriteLine($"\t\te = new {type.FullName}().Patch(harmony);");
+        WriteLine($"\t\tif(e != null) Plugin.Logger.LogError(\"Harmony Patch Error: \" + e);");
+    }
+#>
+        }
+        catch(Exception ex){
+            Plugin.Logger.LogError($"An Error Escaped Patch Manager. This Should never Happen.\n{ex}");
+        }
+    }
+}
