@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using Archipelago.MultiClient.Net.Enums;
 using UnityEngine;
 using Debug = System.Diagnostics.Debug;
 using Random = UnityEngine.Random;
@@ -45,6 +47,21 @@ public class UIManager : MonoBehaviour
     private Rect _connectionWindow = new Rect(10, 10, 320, 500);
     private readonly int _connectionWindowId = Random.RandomRangeInt(0, int.MaxValue);
     private bool _showConnectionWindow = true;
+
+    private void Update()
+    {
+        if(_tryDisconnect > 0)
+            _tryDisconnect-=Time.deltaTime;
+        if(Input.GetKeyDown(Configuration.Instance.ToggleMessageLogKey.Value))
+            _showMessageLog = !_showMessageLog;
+        if(Input.GetKeyDown(Configuration.Instance.ToggleConnectionWindowKey.Value))
+            _showConnectionWindow = !_showConnectionWindow;
+        #if DEBUG
+        if (Input.GetKeyDown(Configuration.Instance.ToggleDebugKey.Value))
+            _showDebugWindow = !_showDebugWindow;
+        #endif
+    }
+
     private void OnGUI()
     {
         _messageStyle ??= new GUIStyle(GUI.skin.label)
@@ -53,19 +70,13 @@ public class UIManager : MonoBehaviour
             alignment = Configuration.Instance.MessageLogOrigin.Value
         };
         
-        if(Input.GetKeyDown(Configuration.Instance.ToggleMessageLogKey.Value))
-            _showMessageLog = !_showMessageLog;
         if(_showMessageLog)
             DrawMessageLog();
         
-        if(Input.GetKeyDown(Configuration.Instance.ToggleConnectionWindowKey.Value))
-            _showConnectionWindow = !_showConnectionWindow;
         if (_showConnectionWindow)
             _connectionWindow = GUI.Window(_connectionWindowId, _connectionWindow, ArchipelagoManager.Session != null ? DrawConnected : DrawDisconnected,"Connection");
         
         #if DEBUG
-        if (Input.GetKeyDown(Configuration.Instance.ToggleDebugKey.Value))
-            _showDebugWindow = !_showDebugWindow;
         if(_showDebugWindow)
             _debugWindow = GUI.Window(_debugWindowId,_debugWindow,DrawDebugWindow, "Debug");
         #endif
@@ -73,11 +84,20 @@ public class UIManager : MonoBehaviour
 
     private string _sendMessage = string.Empty;
     private bool _deathLink;
+    private float _tryDisconnect;
     private void DrawConnected(int windowId)
     {
         Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
+        if (GUILayout.Button(_tryDisconnect > 0 ? "Are You Sure?" : "Disconnect"))
+        {
+            if(_tryDisconnect > 0)
+                ArchipelagoManager.Disconnect();
+            else
+                _tryDisconnect = 5f;
+        }
         GUILayout.Label($"Connected to {ArchipelagoManager.Session.Socket.Uri.Host}:{ArchipelagoManager.Session.Socket.Uri.Port}");
-        GUILayout.Label($"{ArchipelagoManager.Session.Locations.AllLocationsChecked.Count}/{ArchipelagoManager.Session.Locations.AllLocations} locations checked");
+        GUILayout.Label($"{ArchipelagoManager.Session.Locations.AllLocationsChecked.Count}/{ArchipelagoManager.Session.Locations.AllLocations.Count} locations checked");
+        GUILayout.Label($"{Plugin.Data.CompletedLevels.Count}/{Plugin.Data.GoalRequirement} levels to unlock the goal.");
         ArchipelagoManager.DeathLinkEnabled = GUILayout.Toggle(ArchipelagoManager.DeathLinkEnabled, "Death Link");
         _sendMessage = GUILayout.TextArea(_sendMessage);
         if (GUILayout.Button("Send Message"))
@@ -137,22 +157,31 @@ public class UIManager : MonoBehaviour
     private Rect _debugWindow = new Rect(170, 10, 1000, 1000);
     private readonly int _debugWindowId = Random.RandomRangeInt(0, int.MaxValue);
 
-    private int _debugTab = 0;
-    private readonly string[] _tabs = [ "Locations", "SlotData" ];
+    private int _debugTab = 2;
+    private readonly string[] _tabs = [ "Locations", "SlotData", "Abilities", "Levels"];
     private GUIStyle _debugStyle;
 
     private void DrawDebugWindow(int windowId)
     {
-        GUI.DragWindow(_debugWindow);
         _debugStyle ??= new GUIStyle(GUI.skin.label)
         {
             richText = true,
         };
         
+        if (ArchipelagoManager.Session == null)
+        {
+            GUILayout.Label("Not connected to any session (location)");
+            return;
+        }
         GUILayout.BeginHorizontal();
-        for (int i = 0; i < _tabs.Length; ++i)
-            if(GUILayout.Button(_tabs[i]))
+        for (int i = 0; i < _tabs.Length; i++){
+            if (GUILayout.Button(_tabs[i]))
+            {
                 _debugTab = i;
+                Plugin.Logger.LogInfo("Switching tab "+ i);
+            }
+        }
+
         GUILayout.EndHorizontal();
         switch (_debugTab)
         {
@@ -162,17 +191,20 @@ public class UIManager : MonoBehaviour
             case 1:
                 DebugDrawSlotData();
                 break;
+            case 2:
+                DebugDrawAbilities();
+                break;
+            case 3: 
+                DebugDrawLevels();
+                break;
         }
+        GUI.DragWindow(_debugWindow);
     }
     Vector2 _debugScroll = Vector2.zero;
     void DebugDrawLocationTab()
     {
-        if (ArchipelagoManager.Session == null)
-        {
-            GUILayout.Label("Not connected to any session");
-            return;
-        }
         _debugScroll = GUILayout.BeginScrollView(_debugScroll);
+        Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         foreach (var locationID in ArchipelagoManager.Session.Locations.AllLocations)
         {
             bool check = ArchipelagoManager.Session.Locations.AllLocationsChecked.Contains(locationID);
@@ -191,15 +223,79 @@ public class UIManager : MonoBehaviour
 
     void DebugDrawSlotData()
     {
-        if (ArchipelagoManager.Session == null)
-        {
-            GUILayout.Label("Not connected to any session");
-            return;
-        }
         _debugScroll = GUILayout.BeginScrollView(_debugScroll);
         foreach ( var slot in ArchipelagoManager.SlotData)
         {
             GUILayout.Label($"{slot.Key}: {slot.Value}");
+        }
+        GUILayout.EndScrollView();
+    }
+
+    private static readonly info.Abilities[] Abilities = Enum.GetValues(typeof(info.Abilities)).Cast<info.Abilities>().ToArray();
+    private static readonly TextInfo EnUs = new CultureInfo("en-US", false).TextInfo;
+    void DebugDrawAbilities()
+    {
+        if (GUILayout.Button("+10000 points"))
+        {
+            pointsHandler.AddPoints(10000);
+            Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
+            ArchipelagoManager.Session.DataStorage[Scope.Slot,"points"] = pointsHandler.Points;
+        }
+
+        _debugScroll = GUILayout.BeginScrollView(_debugScroll);
+        foreach (var ability in Abilities)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(EnUs.ToTitleCase(ability.ToString().Replace('_', ' ')),GUILayout.Width(150));
+            GUI.changed = false;
+            bool check = GUILayout.Toggle(Plugin.Data.CheckedAbilities.Contains(ability),"Checked",GUILayout.Width(100));
+            if (GUI.changed)
+            {
+                if(check)
+                    Plugin.Data.CheckedAbilities.Add(ability);
+                else
+                    Plugin.Data.CheckedAbilities.Remove(ability);
+            }
+            GUI.changed = false;
+            bool owned = GUILayout.Toggle(Plugin.Data.UnlockedAbilities.Contains(ability),"Unlocked",GUILayout.Width(100));
+            if (GUI.changed)
+            {
+                if(owned)
+                    Plugin.Data.UnlockedAbilities.Add(ability);
+                else
+                    Plugin.Data.UnlockedAbilities.Remove(ability);
+            }
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndScrollView();
+        
+    }
+
+    void DebugDrawLevels()
+    {
+        _debugScroll = GUILayout.BeginScrollView(_debugScroll);
+        for (int i = 0; i <= 89; i++)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"{i/10+1}-{i%10+1}",GUILayout.Width(150));
+            bool check = GUILayout.Toggle(Plugin.Data.CompletedLevels.Contains(i),"Checked",GUILayout.Width(100));
+            if (GUI.changed)
+            {
+                if(check)
+                    Plugin.Data.CompletedLevels.Add(i);
+                else
+                    Plugin.Data.CompletedLevels.Remove(i);
+            }
+            GUI.changed = false;
+            bool owned = GUILayout.Toggle(Plugin.Data.AvailableLevels.Contains(i),"Unlocked",GUILayout.Width(100));
+            if (GUI.changed)
+            {
+                if(owned)
+                    Plugin.Data.AvailableLevels.Add(i);
+                else
+                    Plugin.Data.AvailableLevels.Remove(i);
+            }
+            GUILayout.EndHorizontal();
         }
         GUILayout.EndScrollView();
     }

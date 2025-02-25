@@ -32,8 +32,10 @@ dotnet build
 
 echo "Code Gen"
 t4 -r "${SOLUTION_DIR}/bin/Debug/net35/ArchipelagoClusterTruck.dll" \
+	-r "${SOLUTION_DIR}/bin/Debug/net35/Archipelago.MultiClient.Net.dll" \
 	-r "${GAME_DIR}/Clustertruck_Data/Managed/UnityEngine.dll" \
 	-r "${GAME_DIR}/BepInEx/core/BepInEx.dll" \
+	-r "${GAME_DIR}/Clustertruck_Data/Managed/Assembly-CSharp.dll" \
 	./Patches/PatchManager.tt
 
 echo "Final Build"

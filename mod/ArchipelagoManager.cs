@@ -47,15 +47,17 @@ public static class ArchipelagoManager
         }
     }
 
+    internal static bool DeathLinkSendingDeath = false;
     static void OnDeathLink(DeathLink deathLink)
     {
         #if VERBOSE
         Plugin.Logger.LogInfo($"Detected death link: {deathLink.Source} {deathLink.Cause} {deathLink.Timestamp.ToLocalTime()}");
         #endif
         Plugin._uiManager.PushMessage($"{deathLink.Source} died by <color=red>{deathLink.Cause}</color>");
+        if(!info.playing) return;
         GameManager gm = Object.FindObjectOfType<GameManager>();
         if(!gm) return;
-        
+        DeathLinkSendingDeath = true;
         gm.LoseLevel();
     }
     
@@ -80,8 +82,6 @@ public static class ArchipelagoManager
             Session.Socket.PacketsSent += OnSentPacket;
             Session.Socket.PacketReceived += OnReceivedPacket;
             #endif
-            
-            Debug.Assert(Session != null, nameof(Session) + " != null"); // A session can never be null here
             result = Session.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion,[],
                 null, password, true);
             DeathLinkService = Session.CreateDeathLinkService();
@@ -95,7 +95,8 @@ public static class ArchipelagoManager
         {
             #if VERBOSE
             Plugin.Logger.LogError($"[VERBOSE] Failed to connect to {realHost}:{port}: {e.Message}\n{e.StackTrace}");
-            #endif  
+            #endif
+            Session = null;
             result = new LoginFailure(e.GetBaseException().Message);
         }
 
@@ -157,8 +158,20 @@ public static class ArchipelagoManager
         TeamNumber = null;
         SlotData = null;
         Session?.Socket?.Disconnect();
+        Session = null;
         OnDisconnect?.Invoke();
         return true;
+    }
+    public static void Check(int level,bool ace = false)
+    {
+        Debug.Assert(Session != null, nameof(Session) + " != null");
+        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + level + (ace ? 104 : 0));
+    }
+
+    public static void Check(info.Abilities ability)
+    {
+        Debug.Assert(Session != null, nameof(Session) + " != null");
+        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + 91 + (int)ability);
     }
 
 }

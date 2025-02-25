@@ -1,7 +1,9 @@
 using System;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace ArchipelagoClusterTruck.Patches;
 
@@ -10,8 +12,6 @@ public class LevelSeletHandlerPatches : ClassPatch
     // ReSharper disable twice InconsistentNaming
     static bool PrefixSetButtons(LevelSeletHandler __instance, GameObject[] ___mLevels )
     {
-        if (ArchipelagoManager.Session == null) return true;
-        
         __instance.left.SetActive(true);
         __instance.right.SetActive(true);
         
@@ -27,7 +27,7 @@ public class LevelSeletHandlerPatches : ClassPatch
 
         foreach (GameObject go in ___mLevels)
         {
-            int level = info.currentWorld*10 + int.Parse(go.name);
+            int level = info.currentWorld*10 + int.Parse(go.name)-1;
             Transform box = go.transform.FindChild("box");
             if (Plugin.Data.CompletedLevels.Contains(level))
             {
@@ -52,8 +52,42 @@ public class LevelSeletHandlerPatches : ClassPatch
         return false;
     }
 
+    static bool OnSubmitPrefix(LevelSeletHandler __instance, BaseEventData b,ref GameObject ____currentlySelectedLevel, ref Vector3 ___selectTarget )
+    {
+        if (!b.selectedObject.CompareTag("levelButton"))
+            return false;
+        int level = int.Parse(b.selectedObject.name) + info.currentWorld * 10 - 1;
+        
+        if (Plugin.Data.AvailableLevels.Contains(level))
+        {
+            if (!____currentlySelectedLevel)
+                ____currentlySelectedLevel = b.selectedObject;
+            else if (____currentlySelectedLevel == b.selectedObject)
+                Manager.Instance().Play();
+            else
+                ____currentlySelectedLevel = b.selectedObject;
+            
+            ___selectTarget = b.selectedObject.transform.position;
+            info.currentLevel = int.Parse(b.selectedObject.name) + info.currentWorld * 10;
+            
+        }
+        else
+        {
+            __instance.selectShake.SetShake(10f);
+        }
+        return false;
+    }
+
+    static void MoveWorldPostfix()
+    {
+        Object.FindObjectOfType<EventSystem>().SetSelectedGameObject(null);
+    }
+
     public override Exception Patch(Harmony harmony)
     {
-        return MakePatch(harmony, typeof(LevelSeletHandler), nameof(LevelSeletHandler.setButtons), nameof(PrefixSetButtons));
+        var e1 = MakePatch(harmony, typeof(LevelSeletHandler), nameof(LevelSeletHandler.setButtons), nameof(PrefixSetButtons));
+        var e2 = MakePatch(harmony, typeof(LevelSeletHandler), nameof(LevelSeletHandler.OnSubmit), nameof(OnSubmitPrefix));
+        var e3 = MakePatch(harmony,typeof(LevelSeletHandler),nameof(LevelSeletHandler.MoveWorld),null,nameof(MoveWorldPostfix));
+        return e1 ?? e2 ?? e3;
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using Archipelago.MultiClient.Net.Enums;
 using HarmonyLib;
 using InControl;
 using UnityEngine;
@@ -28,10 +29,7 @@ public class abilityMenuPatches : ClassPatch
             {
                 if (!Plugin.Data.CheckedAbilities.Contains(ability) && pointsHandler.Points >= __instance.selectedButton.AbilityCost)
                 {
-                    pointsHandler.AddPoints(-__instance.selectedButton.AbilityCost);
-                    Plugin.Data.CheckedAbilities.Add(ability);
-                    _abilityMenuCheckButtons.Invoke(__instance, null);
-                    //TODO run location check for ability
+                    CheckAbility(__instance,ability);
                 }
                 else
                 {
@@ -64,12 +62,18 @@ public class abilityMenuPatches : ClassPatch
         }
         else if (!Plugin.Data.CheckedAbilities.Contains(ability) && pointsHandler.Points >= __instance.selectedButton.AbilityCost)
         {
-            pointsHandler.AddPoints(-__instance.selectedButton.AbilityCost);
-            Plugin.Data.CheckedAbilities.Add(ability);
-            _abilityMenuCheckButtons.Invoke(__instance, null);
-            //TODO run location check for ability
+            CheckAbility(__instance,ability);
         }
         return false;
+    }
+
+    static void CheckAbility(abilityMenu menu, info.Abilities ability)
+    {
+        pointsHandler.AddPoints(-menu.selectedButton.AbilityCost);
+        Plugin.Data.CheckedAbilities.Add(ability);
+        _abilityMenuCheckButtons.Invoke(menu, null);
+        ArchipelagoManager.Check(ability);
+        ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"] = pointsHandler.Points;
     }
 
     static bool CheckButtonPrefix(Button b)
@@ -154,6 +158,12 @@ public class abilityMenuPatches : ClassPatch
         __instance.UnlockButton.GetComponent<Animator>().SetBool(Active, value: !check);
         return false;
     }
+
+    static void OnEnablePostfix(abilityMenu __instance)
+    {
+        //We don't know if the player obtained something from a level
+        _abilityMenuCheckButtons.Invoke(__instance, null);
+    }
     public override Exception Patch(Harmony harmony)
     {
         _abilityInfoAbilityEnumGetter = AccessTools.PropertyGetter(typeof(abilityInfo), "_abilityNumber");
@@ -165,6 +175,7 @@ public class abilityMenuPatches : ClassPatch
         var e1 = MakePatch(harmony, typeof(abilityMenu), "BuyOrEquip", nameof(BuyOrEquipPrefix));
         var e2 = MakePatch(harmony, typeof(abilityMenu), "CheckButton", nameof(CheckButtonPrefix));
         var e3 = MakePatch(harmony, typeof(abilityMenu), "OnSubmit", nameof(OnSubmitPrefix));
-        return e1 ?? e2 ?? e3;
+        var e4 = MakePatch(harmony, typeof(abilityMenu), "OnEnable", null,nameof(OnEnablePostfix));
+        return e1 ?? e2 ?? e3 ?? e4;
     }
 }

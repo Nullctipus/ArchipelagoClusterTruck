@@ -13,10 +13,18 @@ public class steam_WorkshopHandlerPatches : ClassPatch
     {
         return false;
     }
+
+    static bool UploadLeaderboardScorePrefix(SteamLeaderboard_t hSteamLeaderboard, ELeaderboardUploadScoreMethod eLeaderboardUploadScoreMethod, int nScore, int[] pScoreDetails, int cScoreDetailsCount)
+    {
+        return false;
+    }
     public override Exception Patch(Harmony harmony)
     {
-        return MakePatch(harmony, typeof(steam_WorkshopHandler),
+        var e1 = MakePatch(harmony, typeof(steam_WorkshopHandler),
             nameof(steam_WorkshopHandler.onLeaderboardScoresDownloadedUploadScoresLater),
             nameof(onLeaderboardScoresDownloadedUploadScoresLaterPrefix));
+        var e2 = MakePatch(harmony, typeof(SteamUserStats), nameof(SteamUserStats.UploadLeaderboardScore),
+            nameof(UploadLeaderboardScorePrefix));
+        return e1 ?? e2;
     }
 }
