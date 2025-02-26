@@ -31,7 +31,7 @@ public class GameManagerPatches : ClassPatch
             Plugin.Data.CompletedLevels.Add(info.currentLevel-1);
             ArchipelagoManager.Check(info.currentLevel - 1);
             
-            if (Plugin.Data.CompletedLevels.Count > Plugin.Data.GoalRequirement)
+            if (Plugin.Data.CompletedLevels.Count >= Plugin.Data.GoalRequirement)
                 Plugin.Data.AvailableLevels.Add(Plugin.Data.Goal);
         }
 
