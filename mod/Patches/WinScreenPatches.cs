@@ -28,6 +28,7 @@ public class WinScreenPatches : ClassPatch
             pause.LevelSelect();
             var lsh = Resources.FindObjectsOfTypeAll<LevelSeletHandler>().FirstOrDefault();
             if(lsh)
+                
                 lsh.setButtons();
             else
                 Plugin.Logger.LogError("Could not find LevelSeletHandler");

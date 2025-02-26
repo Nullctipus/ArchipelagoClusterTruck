@@ -214,7 +214,10 @@ public class UIManager : MonoBehaviour
             bool newCheck = GUILayout.Toggle(check, locationName, _debugStyle);
             if (newCheck != check && newCheck)
             {
-                ArchipelagoManager.Session.Locations.CompleteLocationChecksAsync(null, locationID);
+                if(locationName == ArchipelagoManager.SlotData["goal"].ToString())
+                    ArchipelagoManager.Session.SetGoalAchieved();
+                else
+                    ArchipelagoManager.Session.Locations.CompleteLocationChecksAsync(null, locationID);
             }
             GUILayout.EndHorizontal();
         }

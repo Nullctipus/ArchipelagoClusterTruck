@@ -38,11 +38,6 @@ public class SaveData
             case <= 107:
                 Plugin.Logger.LogInfo("Filler");
                 return;
-            case 108:
-                Plugin.Logger.LogInfo("Victory");
-                Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
-                ArchipelagoManager.Session.SetGoalAchieved();
-                return;
         }
 
         switch (item.ItemName)
@@ -150,9 +145,6 @@ public class SaveData
                 }
                 case <= 107:
                     break;  //Filler
-                case 108:
-                    ArchipelagoManager.Session.SetGoalAchieved();
-                    break;
                 default:
                     Plugin.Logger.LogError($"Unknown location: {id} - {ArchipelagoManager.Session.Locations.GetLocationNameFromId(id)}");
                     break;

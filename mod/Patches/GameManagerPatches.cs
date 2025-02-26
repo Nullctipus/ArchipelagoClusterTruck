@@ -26,16 +26,19 @@ public class GameManagerPatches : ClassPatch
     }
     static void WinLevelPrefix(GameManager __instance)
     {
+        Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         if (!Plugin.Data.CompletedLevels.Contains(info.currentLevel-1))
         {
             Plugin.Data.CompletedLevels.Add(info.currentLevel-1);
-            ArchipelagoManager.Check(info.currentLevel - 1);
+            if (Plugin.Data.Goal == info.currentLevel - 1)
+                ArchipelagoManager.Session.SetGoalAchieved();
+            else
+                ArchipelagoManager.Check(info.currentLevel - 1);
             
             if (Plugin.Data.CompletedLevels.Count >= Plugin.Data.GoalRequirement)
                 Plugin.Data.AvailableLevels.Add(Plugin.Data.Goal);
         }
 
-        Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"] = pointsHandler.Points;
     }
     public override Exception Patch(Harmony harmony)
