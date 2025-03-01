@@ -12,13 +12,14 @@
 ## If you are playing
 1. Download BepInEx.zip from the [releases page](https://github.com/Nullctipus/ArchipelagoClusterTruck/releases)
 2. Extract in your ClusterTruck directory (default is `C:\ProgramFiles (x86)\Steam\SteamApps\Common\ClusterTruck`)
-3. Optionally: enable console in `BepInEx/config/BepInEx.cfg` by setting `Logging.Console.Enabled = true`
-4. Start the game.
-5. Optionally: press `F1` to edit the mods settings.
-6. On the upper left type in Address, Slot Name, and optionally Password.
-7. Click Connect
-8. Optionally: enable DeathLink on the upper left
-9. Have Fun
+3. Download and install [.NET Desktop Runtime 9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+4. Optionally: enable console in `BepInEx/config/BepInEx.cfg` by setting `Logging.Console.Enabled = true`
+5. Start the game.
+6. Optionally: press `F1` to edit the mods settings.
+7. On the upper left type in Address, Slot Name, and optionally Password.
+8. Click Connect
+9. Optionally: enable DeathLink on the upper left
+10. Have Fun
 
 ## Linux
 1. Download BepInEx.zip from the [releases page](https://github.com/Nullctipus/ArchipelagoClusterTruck/releases)
