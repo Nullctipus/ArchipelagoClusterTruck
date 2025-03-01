@@ -1,0 +1,88 @@
+﻿using System.Diagnostics;
+using System.Net;
+using System.Security.Authentication;
+using System.Net.WebSockets;
+using System.Text;
+
+public class Program
+{
+    private static readonly HttpListener Listener = new HttpListener();
+    private static readonly ClientWebSocket Ws = new ClientWebSocket();
+    private static WebSocket? _client;
+    public static void Main(string[] args)
+    {
+        
+        if (args.Length != 2)
+        {
+            Console.WriteLine("Usage: localport uri");
+        }
+
+        int port = int.Parse(args[0]);
+        string host = args[1];
+
+        Task.WaitAll([ServerLoop(host), OnConnectionClient(port)]);
+    }
+
+    private static async Task ServerLoop(string host)
+    {
+        var uri = new Uri(host);
+        while (_client is not { State: WebSocketState.Open })
+            await Task.Delay(100);
+        Console.WriteLine($"Connecting to {uri}");
+        await Ws.ConnectAsync(uri,CancellationToken.None);
+        var buffer = WebSocket.CreateServerBuffer(1024*1024*4); //4MB
+        Console.WriteLine("Connected to server");
+        while (Ws.State == WebSocketState.Open)
+        {
+            var result = await Ws.ReceiveAsync(buffer,CancellationToken.None);
+            #if DEBUG
+            switch (result.MessageType)
+            {
+                case WebSocketMessageType.Text:
+                    Console.WriteLine($"From Server: {Encoding.UTF8.GetString(buffer.Slice(0,result.Count))}");
+                    break;
+                case WebSocketMessageType.Binary:
+                    Console.WriteLine($"From Server: {result.Count} Bytes");
+                    break;
+            }
+            #endif
+            await _client.SendAsync(buffer.Slice(0,result.Count),result.MessageType,result.EndOfMessage,CancellationToken.None);
+        }
+    }
+
+    private static async Task OnConnectionClient(int port)
+    {
+        Console.WriteLine($"Listening on port {port}");
+        Listener.Prefixes.Add($"http://localhost:{port}/");
+        Listener.Start();
+        
+        HttpListenerContext context = await Listener.GetContextAsync();
+        if (!context.Request.IsWebSocketRequest)
+        {
+            Console.WriteLine("Not a websocket request");
+            return;
+        }
+        HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
+        _client = webSocketContext.WebSocket;
+        Console.WriteLine("Connected to client");
+        await Task.Delay(10);
+        var buffer = WebSocket.CreateServerBuffer(1024*1024*4); //4MB
+        while (_client.State == WebSocketState.Open)
+        {
+            var result = await _client.ReceiveAsync(buffer, CancellationToken.None);
+            #if DEBUG
+            switch (result.MessageType)
+            {
+                case WebSocketMessageType.Text:
+                    Console.WriteLine($"From Client: {Encoding.UTF8.GetString(buffer.Slice(0,result.Count))}");
+                    break;
+                case WebSocketMessageType.Binary:
+                    Console.WriteLine($"From Client: {result.Count} Bytes");
+                    break;
+            }
+            #endif
+            await Ws.SendAsync(buffer.Slice(0,result.Count),result.MessageType,result.EndOfMessage,CancellationToken.None);
+        }
+        
+    }
+}
