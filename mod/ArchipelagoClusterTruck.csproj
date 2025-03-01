@@ -35,6 +35,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 	<PackageReference Include="UnityEngine.Modules" Version="5.3.4" IncludeAssets="compile" />
+	<PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
@@ -61,5 +62,10 @@
     <None Update="Patches\PatchManager.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="resources/ArchipelagoProxy.exe" />
+    <EmbeddedResource Include="resources/ArchipelagoProxy" />
   </ItemGroup>
 </Project>

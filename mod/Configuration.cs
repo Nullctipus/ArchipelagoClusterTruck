@@ -15,7 +15,7 @@ public class Configuration
         _instance = this;
         MessageLogOrigin = config.Bind(ArchipelagoHeader, "MessageLogOrigin", TextAnchor.LowerRight);
         MessageLogCount = config.Bind(ArchipelagoHeader, "MessageLogCount", 5);
-        Host = config.Bind(ArchipelagoHeader, "Host", "Archipelago.gg:");
+        Host = config.Bind(ArchipelagoHeader, "Host", "wss://Archipelago.gg:");
         SlotName = config.Bind(ArchipelagoHeader, "SlotName", string.Empty);
         Password = config.Bind(ArchipelagoHeader, "Password", string.Empty);
         

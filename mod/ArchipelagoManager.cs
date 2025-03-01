@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.BounceFeatures.DeathLink;
@@ -60,30 +61,49 @@ public static class ArchipelagoManager
         DeathLinkSendingDeath = true;
         gm.LoseLevel();
     }
-    
+
+    static void SetupSession()
+    {
+        Debug.Assert(Session != null, nameof(Session) + " != null");
+        Session.Socket.SocketClosed += OnSocketClosed;
+        Session.Socket.ErrorReceived += OnError;
+#if VERBOSE
+        Session.Socket.PacketsSent += OnSentPacket;
+        Session.Socket.PacketReceived += OnReceivedPacket;
+#endif
+    }
     public static bool Connect(string host, string slotName, bool deathLink, string password = null)
     {
-        string realHost = host.Contains(":") ? host.Split(':')[0] : DefaultServer;
-        // I could use 2 ternary operators, but for readability I decided against it
-        int port = DefaultPort;
-        if(host.Contains(":") && int.TryParse(host.Split(':')[1], out var tmpPort))
-            port = tmpPort;
-        else if(int.TryParse(host, out var tmpPort2))
-            port = tmpPort2;
 
-        LoginResult result;
+        LoginResult result = new LoginFailure("Nop");
         try
         {
-            Session = ArchipelagoSessionFactory.CreateSession(realHost, port);
-            Debug.Assert(Session != null, nameof(Session) + " != null");
-            Session.Socket.SocketClosed += OnSocketClosed;
-            Session.Socket.ErrorReceived += OnError;
-            #if VERBOSE
-            Session.Socket.PacketsSent += OnSentPacket;
-            Session.Socket.PacketReceived += OnReceivedPacket;
-            #endif
-            result = Session.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion,[],
-                null, password, true);
+            Exception e = null;
+            if (!host.StartsWith("wss://"))
+            {
+                Session = ArchipelagoSessionFactory.CreateSession(host);
+                SetupSession();
+
+                try
+                {
+                    result = Session!.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion, [],
+                        null, password, true);
+                }
+                catch (Exception ex)
+                {
+                    e = ex;
+                }
+            }
+
+            if (e != null || Session == null)
+            {
+                int port = ProxyHelper.StartProxy(host);
+                Session = ArchipelagoSessionFactory.CreateSession($"ws://127.0.0.1:{port}");
+                SetupSession();
+                result = Session!.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion, [],
+                    null, password, true);
+            }
+
             DeathLinkService = Session.CreateDeathLinkService();
             DeathLinkService.OnDeathLinkReceived += OnDeathLink;
             _deathLinkEnabled = deathLink;
@@ -94,7 +114,7 @@ public static class ArchipelagoManager
         catch (Exception e)
         {
             #if VERBOSE
-            Plugin.Logger.LogError($"[VERBOSE] Failed to connect to {realHost}:{port}: {e.Message}\n{e.StackTrace}");
+            Plugin.Logger.LogError($"[VERBOSE] Failed to connect to {host}: {e.Message}\n{e.StackTrace}");
             #endif
             Session = null;
             result = new LoginFailure(e.GetBaseException().Message);
@@ -103,7 +123,7 @@ public static class ArchipelagoManager
         if (!result.Successful)
         {
             LoginFailure failure = (LoginFailure)result;
-            string errorMessage = $"Failed to connect to {realHost}:{port} as {slotName}:\n" + failure.Errors.Join(delimiter: "\n\t") +failure.ErrorCodes.Join(delimiter: "\n\t");
+            string errorMessage = $"Failed to connect to {host} as {slotName}:\n" + failure.Errors.Join(delimiter: "\n\t") +failure.ErrorCodes.Join(delimiter: "\n\t");
             Plugin.Logger.LogError(errorMessage);
             return false;
         }
@@ -112,7 +132,7 @@ public static class ArchipelagoManager
         SlotNumber = loginSuccessful.Slot;
         TeamNumber = loginSuccessful.Team;
         SlotData = loginSuccessful.SlotData;
-        Plugin.Logger.LogInfo($"Successfully connected to {realHost}:{port}\nGot slot number: {SlotNumber}\nTeam number: {TeamNumber}");
+        Plugin.Logger.LogInfo($"Successfully connected to {host}\nGot slot number: {SlotNumber}\nTeam number: {TeamNumber}");
         #if VERBOSE
         foreach (KeyValuePair<string, object> kvp in loginSuccessful.SlotData)
         {
@@ -141,6 +161,7 @@ public static class ArchipelagoManager
     static void OnReceivedPacket(ArchipelagoPacketBase packet)
     {
         Plugin.Logger.LogInfo($"Received packet: {packet}");
+        
     }
     #endif
     static void OnError(Exception exception, string errorMessage)
@@ -149,6 +170,7 @@ public static class ArchipelagoManager
     }
     static void OnSocketClosed(string reason)
     {
+        Plugin.Logger.LogWarning(new StackTrace());
         Plugin.Logger.LogWarning($"Socket closed: {reason}");
         Disconnect();
     }
@@ -160,6 +182,8 @@ public static class ArchipelagoManager
         Session?.Socket?.Disconnect();
         Session = null;
         OnDisconnect?.Invoke();
+        if(ProxyHelper.ProxyRunning != null && !ProxyHelper.ProxyRunning.HasExited)
+            ProxyHelper.ProxyRunning.Kill();
         return true;
     }
     public static void Check(int level,bool ace = false)

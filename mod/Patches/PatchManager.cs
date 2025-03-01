@@ -18,8 +18,6 @@ public static class PatchManager {
 		if(e != null) Plugin.Logger.LogError("Harmony Patch Error: " + e);
 		e = new ArchipelagoClusterTruck.Patches.GameManagerPatches().Patch(harmony);
 		if(e != null) Plugin.Logger.LogError("Harmony Patch Error: " + e);
-		e = new ArchipelagoClusterTruck.Patches.infoPatches().Patch(harmony);
-		if(e != null) Plugin.Logger.LogError("Harmony Patch Error: " + e);
 		e = new ArchipelagoClusterTruck.Patches.LevelSeletHandlerPatches().Patch(harmony);
 		if(e != null) Plugin.Logger.LogError("Harmony Patch Error: " + e);
 		e = new ArchipelagoClusterTruck.Patches.pointsHandlerPatches().Patch(harmony);

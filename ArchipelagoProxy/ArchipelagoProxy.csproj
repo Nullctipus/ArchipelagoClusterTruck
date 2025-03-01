@@ -5,10 +5,10 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ProjectParentDir>$([System.IO.Path]::GetDirectoryName($(ProjectDir))))</ProjectParentDir>
-    <OutputPath>$(ProjectParentDir)/</OutputPath>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
-  
   
   <ItemGroup>
     <PackageReference Include="System.Net.WebSockets" Version="4.3.0" />

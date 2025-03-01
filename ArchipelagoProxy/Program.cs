@@ -25,6 +25,8 @@ public class Program
 
     private static async Task ServerLoop(string host)
     {
+        if(!host.StartsWith("wss://"))
+            host = "wss://" + host;
         var uri = new Uri(host);
         while (_client is not { State: WebSocketState.Open })
             await Task.Delay(100);
@@ -48,20 +50,33 @@ public class Program
             #endif
             await _client.SendAsync(buffer.Slice(0,result.Count),result.MessageType,result.EndOfMessage,CancellationToken.None);
         }
+        Environment.Exit(0);
     }
 
     private static async Task OnConnectionClient(int port)
     {
-        Console.WriteLine($"Listening on port {port}");
-        Listener.Prefixes.Add($"http://localhost:{port}/");
+        Listener.Prefixes.Add($"http://127.0.0.1:{port}/");
         Listener.Start();
-        
-        HttpListenerContext context = await Listener.GetContextAsync();
-        if (!context.Request.IsWebSocketRequest)
+        do
         {
-            Console.WriteLine("Not a websocket request");
-            return;
+            await Task.Delay(100);
+        } while (!Listener.IsListening);
+            
+        Console.WriteLine($"Listening on port {port}");
+        HttpListenerContext context;
+        while (true)
+        {
+            context = await Listener.GetContextAsync();
+            if (!context.Request.IsWebSocketRequest)
+            {
+                Console.WriteLine("Not a websocket request");
+                context.Response.StatusCode = 400;
+                context.Response.Close();
+            }
+            else
+                break;
         }
+
         HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
         _client = webSocketContext.WebSocket;
         Console.WriteLine("Connected to client");
@@ -83,6 +98,6 @@ public class Program
             #endif
             await Ws.SendAsync(buffer.Slice(0,result.Count),result.MessageType,result.EndOfMessage,CancellationToken.None);
         }
-        
+        Environment.Exit(0);
     }
 }

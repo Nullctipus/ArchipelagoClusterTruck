@@ -13,6 +13,10 @@ public abstract class ClassPatch
 
     protected Exception? MakePatch(Harmony harmony,Type originalType, string original, string? prefix = null, string? postfix = null)
     {
+        return MakePatch(harmony, originalType.GetMethod(original,BindingFlags.Instance|BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic), prefix, postfix);
+    }
+    protected Exception? MakePatch(Harmony harmony,MethodInfo original, string? prefix = null, string? postfix = null)
+    {
         HarmonyMethod? prefixMethod = null;
         HarmonyMethod? postfixMethod = null;
         try
@@ -23,7 +27,7 @@ public abstract class ClassPatch
             if (!string.IsNullOrEmpty(postfix))
                 prefixMethod =
                     new HarmonyMethod(GetType().GetMethod(postfix, BindingFlags.Static | BindingFlags.NonPublic));
-            harmony.Patch(originalType.GetMethod(original,BindingFlags.Instance|BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic), prefixMethod, postfixMethod);
+            harmony.Patch(original, prefixMethod, postfixMethod);
             return null;
         }
         catch (Exception e)
