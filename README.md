@@ -21,9 +21,14 @@
 9. Have Fun
 
 ## Linux
-First make sure you have a Windows version of the game by enabling a Compatibility Tool. I used `Proton 9.0-4`
-
-Then edit your Launch Option to `SDL_VIDEODRIVER= WINEDLLOVERRIDES="winhttp=n,b" %command%`. This will allow SDL to use whatever videodriver it can and load BepInEx.
+1. Download BepInEx.zip from the [releases page](https://github.com/Nullctipus/ArchipelagoClusterTruck/releases)
+2. Extract in your ClusterTruck directory (default is `~/.local/share/Steam/steamapps/common/Clustertruck`)
+3. Delete `BepInEx/Core`
+4. Download [BepInEx_linux_x64_5.4.23.2.zip](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.2)
+5. Extract to game folder
+6. Edit `run_bepinex.sh` so that `dll_search_path_override="unstripped"`
+7. Set Launch Options to `./run_bepinex.sh "%command%"`
+8. Continue from step 3 of above list
 
 ## Inside BepInEx.zip
 If you don't want to download the zip you can make it yourself
