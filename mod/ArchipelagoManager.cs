@@ -195,7 +195,7 @@ public static class ArchipelagoManager
     public static void Check(info.Abilities ability)
     {
         Debug.Assert(Session != null, nameof(Session) + " != null");
-        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + 91 + (int)ability);
+        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + 90 + (int)ability);
     }
 
 }
