@@ -24,9 +24,7 @@ public class SaveData
     private void ReceiveItem(ItemInfo item)
     {
         int id = (int)(item.ItemId - BaseID);
-        #if VERBOSE
         Plugin.Logger.LogInfo($"Received Item: {item.ItemName} ({id})");
-        #endif
         switch (id)
         {
             case < 90:
@@ -37,7 +35,7 @@ public class SaveData
                 return;
             case <= 107:
                 Plugin.Logger.LogInfo("Filler");
-                return;
+                break;
         }
 
         switch (item.ItemName)
