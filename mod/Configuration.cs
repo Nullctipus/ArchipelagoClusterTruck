@@ -29,7 +29,9 @@ public class Configuration
         ToggleMessageLogKey = config.Bind(KeysHeader, "ToggleMessageLogKey", KeyCode.F3);
         ToggleConnectionWindowKey = config.Bind(KeysHeader, "ToggleConnectionWindowKey", KeyCode.F4);
         #if DEBUG
-        ToggleDebugKey = config.Bind(KeysHeader, "ToggleDebugWindowKey", KeyCode.F6);
+        ToggleDebugKey = config.Bind(DebugHeader, "ToggleDebugWindowKey", KeyCode.F6);
+        ToggleNoclipKey = config.Bind(DebugHeader, "ToggleNoclipKey", KeyCode.V);
+        NoclipSpeed = config.Bind(DebugHeader,"NoclipSpeed",10f); 
         #endif
     }
 
@@ -53,6 +55,9 @@ public class Configuration
     public readonly ConfigEntry<KeyCode> ToggleMessageLogKey,
         ToggleConnectionWindowKey;
     #if DEBUG
+    private const string DebugHeader = "Debug";
     public readonly ConfigEntry<KeyCode> ToggleDebugKey;
-    #endif
+    public readonly ConfigEntry<KeyCode> ToggleNoclipKey;
+    public readonly ConfigEntry<float> NoclipSpeed;
+#endif
 }

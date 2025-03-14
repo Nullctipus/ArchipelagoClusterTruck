@@ -8,7 +8,7 @@ namespace ArchipelagoClusterTruck.Patches;
 
 public class GameManagerPatches : ClassPatch
 {
-    static void LoseLevelPostFix(GameManager __instance, bool ___done)
+    static void LoseLevelPostFix(bool ___done)
     {
         if (ArchipelagoManager.DeathLinkSendingDeath)
         {
@@ -24,7 +24,7 @@ public class GameManagerPatches : ClassPatch
         Debug.Assert(ArchipelagoManager.SlotNumber != null, "ArchipelagoManager.SlotNumber != null");
         ArchipelagoManager.DeathLinkService.SendDeathLink(new DeathLink(ArchipelagoManager.Session.Players.GetPlayerAlias(ArchipelagoManager.SlotNumber.Value)));
     }
-    static void WinLevelPrefix(GameManager __instance)
+    static void WinLevelPrefix()
     {
         Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         if (!Plugin.Data.CompletedLevels.Contains(info.currentLevel-1))
@@ -41,10 +41,16 @@ public class GameManagerPatches : ClassPatch
 
         ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"] = pointsHandler.Points;
     }
+
+    static void FinalBossBeatPostfix()
+    {
+        WinLevelPrefix();
+    }
     public override Exception Patch(Harmony harmony)
     {
         var e1 = MakePatch(harmony,typeof(GameManager), nameof(GameManager.WinLevel),nameof(WinLevelPrefix));
         var e2 = MakePatch(harmony, typeof(GameManager), nameof(GameManager.LoseLevel), nameof(LoseLevelPostFix));
-        return e1 ?? e2;
+        var e3 = MakePatch(harmony, typeof(LastBoss),"TheEnd",nameof(FinalBossBeatPostfix));
+        return e1 ?? e2 ?? e3;
     }
 }
