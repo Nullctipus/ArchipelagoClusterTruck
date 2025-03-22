@@ -22,6 +22,8 @@
 10. Have Fun
 
 ## Linux
+0. THE SNAP VERSION WILL NOT WORK, EITHER USE PROTON OR SWITCH TO NATIVE/FLATPAK
+   1. Make sure you have mono and dotnet 9.0 installed
 1. Download BepInEx.zip from the [releases page](https://github.com/Nullctipus/ArchipelagoClusterTruck/releases)
 2. Extract in your ClusterTruck directory (default is `~/.local/share/Steam/steamapps/common/Clustertruck`)
 3. Delete `BepInEx/Core`
