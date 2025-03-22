@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Archipelago.MultiClient.Net.Enums;
@@ -107,7 +108,6 @@ public class abilityMenuPatches : ClassPatch
         
         return false;
     }
-
     static bool OnSubmitPrefix(abilityMenu __instance, BaseEventData p, ref GameObject ___lastObject)
     {
         if (!p.selectedObject.CompareTag("ability"))
@@ -122,11 +122,16 @@ public class abilityMenuPatches : ClassPatch
         else
         {
             __instance.selectedButton = p.selectedObject.GetComponent<abilityInfo>();
-            
+
+            info.Abilities ability =
+                (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton, null);
              check =
-                Plugin.Data.CheckedAbilities.Contains(
-                    (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton, null));
-            __instance.myUI.changeAbility(__instance.selectedButton.infoField, __instance.selectedButton.AbilityCost.ToString(),check);
+                Plugin.Data.CheckedAbilities.Contains(ability);
+             
+             Debug.Assert(Plugin.Data.abilityHints.ContainsKey(ability));
+             string[] infoField = [Plugin.Data.abilityHints[ability],""];
+             
+            __instance.myUI.changeAbility(infoField, __instance.selectedButton.AbilityCost.ToString(),check);
         }
         check =
             Plugin.Data.CheckedAbilities.Contains(

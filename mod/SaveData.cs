@@ -6,6 +6,7 @@ using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Models;
 using ArchipelagoClusterTruck.Patches;
 using UnityEngine;
+using Color = UnityEngine.Color;
 using Debug = System.Diagnostics.Debug;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -73,6 +74,7 @@ public class SaveData
         
         BaseID = Convert.ToInt64(ArchipelagoManager.SlotData["base_id"]);
         GoalRequirement = Convert.ToInt32(ArchipelagoManager.SlotData["goal_requirement"]);
+        PointMultiplier = Convert.ToInt32(ArchipelagoManager.SlotData["point_multiplier"]);
         
         ArchipelagoManager.Session.Items.ItemReceived += (item) => ReceiveItem(item.DequeueItem());
         while(ArchipelagoManager.Session.Items.DequeueItem() is { } item)
@@ -152,6 +154,27 @@ public class SaveData
         var points = ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"].To<int>();
         
         pointsHandler.AddPoints(points - pointsHandler.Points);
+        
+        
+        ArchipelagoManager.Session.Locations.ScoutLocationsAsync((itemInfo) =>
+        {
+            foreach (var kvp in itemInfo)
+            {
+                int abilityId = (int)(kvp.Key - BaseID-90);
+                info.Abilities ability = (info.Abilities)abilityId;
+                Color color = kvp.Value.Flags switch
+                {
+                    ItemFlags.Advancement => Configuration.Instance.ProgressionColor.Value,
+                    ItemFlags.Trap  => Configuration.Instance.TrapColor.Value,
+                    ItemFlags.NeverExclude => Configuration.Instance.UsefulColor.Value,
+                    _ => Configuration.Instance.NormalColor.Value,
+                };
+                string colorString =
+                    $"#{Mathf.RoundToInt(color.r * 255):X2}{Mathf.RoundToInt(color.g * 255):X2}{Mathf.RoundToInt(color.b * 255):X2}";
+                abilityHints.Add(ability,$"<color={colorString}> {kvp.Value.ItemDisplayName} ({kvp.Value.Player})</color>");
+                
+            }
+        },HintCreationPolicy.CreateAndAnnounceOnce,Enumerable.Range(90,103-90).Select(x=>BaseID+x).ToArray());
     }
 
     void OnDisconnect()
@@ -160,9 +183,12 @@ public class SaveData
         AvailableLevels.Clear();
         UnlockedAbilities.Clear();
         CheckedAbilities.Clear();
+        abilityHints.Clear();
     }
 
     public long BaseID;
+
+    public int PointMultiplier;
     
     public int Goal = 0;
     public int GoalRequirement;
@@ -172,6 +198,8 @@ public class SaveData
     
     public readonly HashSet<info.Abilities> UnlockedAbilities = [];
     public readonly HashSet<info.Abilities> CheckedAbilities = [];
-    
-    
+
+    public readonly Dictionary<info.Abilities, string> abilityHints = new ();
+
+
 }

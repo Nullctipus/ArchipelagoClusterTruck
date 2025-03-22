@@ -13,6 +13,9 @@ public class pointsHandlerPatches : ClassPatch
 
     static bool AddPointsPrefix(ref int ____currentPoints, float p)
     {
+        if (p > 0) 
+            p *= Plugin.Data.PointMultiplier;
+        
         ____currentPoints+=(int) p;
         return false;
     }
