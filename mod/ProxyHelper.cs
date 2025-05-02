@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading;
 using Mono.Cecil;
 using UnityEngine;
@@ -24,7 +25,6 @@ public static class ProxyHelper
         
         int port = FreeTcpPort();
         Plugin.Logger.LogInfo($"Starting proxy on 127.0.0.1:{port} for {host}");
-
 
         ProcessStartInfo startInfo = new(ExePath)
         {
@@ -103,14 +103,38 @@ public static class ProxyHelper
       l.Stop();
       return port;
     }
-    
+
     static void EnsureProxyExecutable()
     {
         Directory.CreateDirectory(Application.streamingAssetsPath);
-        if (File.Exists(ExePath))
-            return;
         Assembly assembly = Assembly.GetExecutingAssembly();
         string resourcePath = assembly.GetManifestResourceNames().Single(str => str.EndsWith(ExeName));
+        if (File.Exists(ExePath))
+        {
+            string target;
+            using (var md5 = MD5.Create())
+            {
+                using (var stream = assembly.GetManifestResourceStream(resourcePath))
+                {
+                    target = Convert.ToBase64String(md5.ComputeHash(stream));
+                }
+            }
+
+            string file;
+            using (var md5 = MD5.Create())
+            {
+                using (var stream = File.OpenRead(ExePath))
+                {
+                    file = Convert.ToBase64String(md5.ComputeHash(stream));
+                }
+            }
+
+            if (file == target)
+            {
+                return;
+            }
+        }
+
         using var inStream = assembly.GetManifestResourceStream(resourcePath);
         using var outStream = File.OpenWrite(ExePath);
         const int bufferSize = 64 * 1024; // 64 kb
@@ -125,8 +149,8 @@ public static class ProxyHelper
         }
 
         if (Environment.OSVersion.Platform != PlatformID.Unix) return;
-        
-        
+
+
         ProcessStartInfo chmodProcessInfo = new ProcessStartInfo("chmod", $"u+x {ExePath}")
         {
             CreateNoWindow = true,
@@ -140,22 +164,5 @@ public static class ProxyHelper
         {
             Plugin.Logger.LogError($"[PROXY] chmod error: {error}");
         }
-    }
-    
-
-    static bool WaitForPortToOpen(int port, TimeSpan timeout)
-    {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        using var client = new TcpClient();
-        while (stopwatch.Elapsed < timeout)
-        {
-            try
-            {
-                client.Connect("127.0.0.1", port);
-                return true;
-            }catch{}
-            Thread.Sleep(100);
-        }
-        return false;
     }
 }

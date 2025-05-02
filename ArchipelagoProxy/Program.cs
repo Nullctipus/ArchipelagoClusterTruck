@@ -20,12 +20,19 @@ public class Program
         int port = int.Parse(args[0]);
         string host = args[1];
 
+        Ws.Options.DangerousDeflateOptions = new WebSocketDeflateOptions()
+        {
+            ClientMaxWindowBits = 15,
+            ServerMaxWindowBits = 15,
+            ClientContextTakeover = true,
+            ServerContextTakeover = true,
+        };
         Task.WaitAll([ServerLoop(host), OnConnectionClient(port)]);
     }
 
     private static async Task ServerLoop(string host)
     {
-        if(!host.StartsWith("wss://"))
+        if(!host.StartsWith("wss://") && !host.StartsWith("ws://"))
             host = "wss://" + host;
         var uri = new Uri(host);
         while (_client is not { State: WebSocketState.Open })

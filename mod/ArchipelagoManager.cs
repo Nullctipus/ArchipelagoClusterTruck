@@ -15,8 +15,6 @@ namespace ArchipelagoClusterTruck;
 public static class ArchipelagoManager
 {
     private const string GameName = "ClusterTruck";
-    private const string DefaultServer = "Archipelago.gg";
-    private const int DefaultPort = 38281;
     private const ItemsHandlingFlags HandledItems = ItemsHandlingFlags.AllItems;
     private static readonly Version MinimumVersion = new(5, 1, 0);
     
@@ -75,35 +73,16 @@ public static class ArchipelagoManager
     public static bool Connect(string host, string slotName, bool deathLink, string password = null)
     {
 
-        LoginResult result = new LoginFailure("Nop");
+        LoginResult result;
         try
         {
-            Exception e = null;
-            if (!host.StartsWith("wss://"))
-            {
-                Session = ArchipelagoSessionFactory.CreateSession(host);
-                SetupSession();
 
-                try
-                {
-                    result = Session!.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion, [],
-                        null, password, true);
-                }
-                catch (Exception ex)
-                {
-                    e = ex;
-                }
-            }
-
-            if (e != null || Session == null)
-            {
-                int port = ProxyHelper.StartProxy(host);
-                Session = ArchipelagoSessionFactory.CreateSession($"ws://127.0.0.1:{port}");
-                SetupSession();
-                result = Session!.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion, [],
-                    null, password, true);
-            }
-
+            int port = ProxyHelper.StartProxy(host);
+            Session = ArchipelagoSessionFactory.CreateSession($"ws://127.0.0.1:{port}");
+            SetupSession();
+            result = Session!.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion, [],
+                null, password, true);
+            
             DeathLinkService = Session.CreateDeathLinkService();
             DeathLinkService.OnDeathLinkReceived += OnDeathLink;
             _deathLinkEnabled = deathLink;
