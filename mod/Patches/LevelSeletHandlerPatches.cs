@@ -12,6 +12,8 @@ public class LevelSeletHandlerPatches : ClassPatch
     // ReSharper disable twice InconsistentNaming
     static bool PrefixSetButtons(LevelSeletHandler __instance, GameObject[] ___mLevels )
     {
+        var playButton = GameObject.Find("GameManager/levelSelect/Canvas/play");
+        playButton?.SetActive(false);
         __instance.left.SetActive(true);
         __instance.right.SetActive(true);
         
