@@ -105,7 +105,7 @@ public class UIManager : MonoBehaviour
             ArchipelagoManager.Session.Say(_sendMessage);
             _sendMessage = string.Empty;
         }
-        GUI.DragWindow(_connectionWindow);
+        GUI.DragWindow();
     }
 
     private void DrawDisconnected(int windowId)
@@ -136,7 +136,7 @@ public class UIManager : MonoBehaviour
             Configuration.Instance.Host.ConfigFile.Save();
         }
 
-        GUI.DragWindow(_connectionWindow);
+        GUI.DragWindow();
     }
 
     private void DrawMessageLog()
@@ -198,7 +198,7 @@ public class UIManager : MonoBehaviour
                 DebugDrawLevels();
                 break;
         }
-        GUI.DragWindow(_debugWindow);
+        GUI.DragWindow();
     }
 
     private Vector2 _debugScroll = Vector2.zero;

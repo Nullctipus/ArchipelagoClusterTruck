@@ -16,6 +16,7 @@ public class SaveData
 {
     public SaveData()
     {
+        ArchipelagoManager.OnConnect += OnConnect;
         ArchipelagoManager.OnDisconnect += OnDisconnect;
     }
 

@@ -7,7 +7,7 @@ namespace ArchipelagoClusterTruck.Patches;
 
 public static class PatchManager {
     public static void PatchAll(){
-        var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         Exception? e = null;
         try{
 		e = new ArchipelagoClusterTruck.Patches.abilityManagerPatches().Patch(harmony);
