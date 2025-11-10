@@ -10,7 +10,7 @@ namespace ArchipelagoClusterTruck.Patches;
 public class LevelSeletHandlerPatches : ClassPatch
 {
     // ReSharper disable twice InconsistentNaming
-    static bool PrefixSetButtons(LevelSeletHandler __instance, GameObject[] ___mLevels )
+    private static bool PrefixSetButtons(LevelSeletHandler __instance, GameObject[] ___mLevels )
     {
         var playButton = GameObject.Find("GameManager/levelSelect/Canvas/play");
         playButton?.SetActive(false);
@@ -27,10 +27,10 @@ public class LevelSeletHandlerPatches : ClassPatch
                 break;
         }
 
-        foreach (GameObject go in ___mLevels)
+        foreach (var go in ___mLevels)
         {
-            int level = info.currentWorld*10 + int.Parse(go.name)-1;
-            Transform box = go.transform.FindChild("box");
+            var level = info.currentWorld*10 + int.Parse(go.name)-1;
+            var box = go.transform.FindChild("box");
             if (Plugin.Data.CompletedLevels.Contains(level))
             {
                 box.gameObject.SetActive(true);
@@ -54,11 +54,11 @@ public class LevelSeletHandlerPatches : ClassPatch
         return false;
     }
 
-    static bool OnSubmitPrefix(LevelSeletHandler __instance, BaseEventData b,ref GameObject ____currentlySelectedLevel, ref Vector3 ___selectTarget )
+    private static bool OnSubmitPrefix(LevelSeletHandler __instance, BaseEventData b,ref GameObject ____currentlySelectedLevel, ref Vector3 ___selectTarget )
     {
         if (!b.selectedObject.CompareTag("levelButton"))
             return false;
-        int level = int.Parse(b.selectedObject.name) + info.currentWorld * 10 - 1;
+        var level = int.Parse(b.selectedObject.name) + info.currentWorld * 10 - 1;
         
         if (Plugin.Data.AvailableLevels.Contains(level))
         {
@@ -80,7 +80,7 @@ public class LevelSeletHandlerPatches : ClassPatch
         return false;
     }
 
-    static void MoveWorldPostfix()
+    private static void MoveWorldPostfix()
     {
         Object.FindObjectOfType<EventSystem>().SetSelectedGameObject(null);
     }

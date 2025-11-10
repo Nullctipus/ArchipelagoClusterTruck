@@ -8,7 +8,6 @@ using InControl;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Debug = System.Diagnostics.Debug;
 
 namespace ArchipelagoClusterTruck.Patches;
 
@@ -20,9 +19,9 @@ public class abilityMenuPatches : ClassPatch
     private static MethodInfo _abilityMenuSelectAbilityController;
     private static readonly int Active = Animator.StringToHash("active");
 
-    static bool BuyOrEquipPrefix(abilityMenu __instance)
+    private static bool BuyOrEquipPrefix(abilityMenu __instance)
     {
-        info.Abilities ability = (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton,null);
+        var ability = (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton,null);
         if (Plugin.Data.UnlockedAbilities.Contains(ability))
         {
             if (info.abilityName == __instance.selectedButton.name ||
@@ -68,7 +67,7 @@ public class abilityMenuPatches : ClassPatch
         return false;
     }
 
-    static void CheckAbility(abilityMenu menu, info.Abilities ability)
+    private static void CheckAbility(abilityMenu menu, info.Abilities ability)
     {
         pointsHandler.AddPoints(-menu.selectedButton.AbilityCost);
         Plugin.Data.CheckedAbilities.Add(ability);
@@ -77,30 +76,30 @@ public class abilityMenuPatches : ClassPatch
         ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"] = pointsHandler.Points;
     }
 
-    static bool CheckButtonPrefix(Button b)
+    private static bool CheckButtonPrefix(Button b)
     {
         var info = b.GetComponent<abilityInfo>();
-        ColorBlock colors = default(ColorBlock);
+        var colors = default(ColorBlock);
         colors.pressedColor = new Color(1f, 1f, 1f, 1f);
         colors.colorMultiplier = 1f;
-        bool owned = Plugin.Data.UnlockedAbilities.Contains((info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(info, null));
-        bool check = Plugin.Data.CheckedAbilities.Contains((info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(info, null));
+        var owned = Plugin.Data.UnlockedAbilities.Contains((info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(info, null));
+        var check = Plugin.Data.CheckedAbilities.Contains((info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(info, null));
         Color usedColor;
         if (owned)
             usedColor = check ? Configuration.Instance.OwnedCheckedColor.Value : Configuration.Instance.OwnedUncheckedColor.Value;
         else
             usedColor = check ? Configuration.Instance.UnownedCheckedColor.Value : Configuration.Instance.UnownedUncheckedColor.Value;
-        Color withAlpha = usedColor;
+        var withAlpha = usedColor;
         withAlpha.a = 0.7f;
         colors.normalColor = usedColor;
         colors.highlightedColor = withAlpha;
         colors.disabledColor = usedColor;
         if (owned || check)
         {
-            foreach (Text text in b.GetComponentsInChildren<Text>())
+            foreach (var text in b.GetComponentsInChildren<Text>())
                 text.color = new Color(0.2f, 0.2f, 0.2f, 1f);
             
-            foreach (Image image in b.GetComponentsInChildren<Image>().Where(x=> x.gameObject != b.gameObject))
+            foreach (var image in b.GetComponentsInChildren<Image>().Where(x=> x.gameObject != b.gameObject))
                 image.color = new Color(0.2f, 0.2f, 0.2f, 1f);
         }
 
@@ -108,11 +107,12 @@ public class abilityMenuPatches : ClassPatch
         
         return false;
     }
-    static bool OnSubmitPrefix(abilityMenu __instance, BaseEventData p, ref GameObject ___lastObject)
+
+    private static bool OnSubmitPrefix(abilityMenu __instance, BaseEventData p, ref GameObject ___lastObject)
     {
         if (!p.selectedObject.CompareTag("ability"))
             return false;
-        bool check = false;
+        var check = false;
         if (p.selectedObject.gameObject == ___lastObject)
         { 
             if(Plugin.Data.UnlockedAbilities.Contains(
@@ -123,20 +123,21 @@ public class abilityMenuPatches : ClassPatch
         {
             __instance.selectedButton = p.selectedObject.GetComponent<abilityInfo>();
 
-            info.Abilities ability =
+            var ability =
                 (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton, null);
              check =
                 Plugin.Data.CheckedAbilities.Contains(ability);
              
-             Debug.Assert(Plugin.Data.abilityHints.ContainsKey(ability));
-             string[] infoField = [Plugin.Data.abilityHints[ability],""];
+             Plugin.Assert(Plugin.Data.abilityHintsTitle.ContainsKey(ability));
+             Plugin.Assert(Plugin.Data.abilityHintsDescription.ContainsKey(ability));
+             string[] infoField = [Plugin.Data.abilityHintsTitle[ability],Plugin.Data.abilityHintsDescription[ability]];
              
             __instance.myUI.changeAbility(infoField, __instance.selectedButton.AbilityCost.ToString(),check);
         }
         check =
             Plugin.Data.CheckedAbilities.Contains(
                 (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton, null));
-        InputDevice activeDevice = InputManager.ActiveDevice;
+        var activeDevice = InputManager.ActiveDevice;
         if (activeDevice != null)
         {
             if (activeDevice.Action1.WasPressed)
@@ -164,7 +165,7 @@ public class abilityMenuPatches : ClassPatch
         return false;
     }
 
-    static void OnEnablePostfix(abilityMenu __instance)
+    private static void OnEnablePostfix(abilityMenu __instance)
     {
         //We don't know if the player obtained something from a level
         _abilityMenuCheckButtons.Invoke(__instance, null);
@@ -172,11 +173,11 @@ public class abilityMenuPatches : ClassPatch
     public override Exception Patch(Harmony harmony)
     {
         _abilityInfoAbilityEnumGetter = AccessTools.PropertyGetter(typeof(abilityInfo), "_abilityNumber");
-        Debug.Assert(_abilityInfoAbilityEnumGetter != null);
+        Plugin.Assert(_abilityInfoAbilityEnumGetter != null);
         _abilityMenuCheckButtons = AccessTools.Method(typeof(abilityMenu), "CheckButtons");
-        Debug.Assert(_abilityMenuCheckButtons != null);
+        Plugin.Assert(_abilityMenuCheckButtons != null);
         _abilityMenuSelectAbilityController = AccessTools.Method(typeof(abilityMenu), "SelectAbilityController");
-        Debug.Assert(_abilityMenuSelectAbilityController != null);
+        Plugin.Assert(_abilityMenuSelectAbilityController != null);
         var e1 = MakePatch(harmony, typeof(abilityMenu), "BuyOrEquip", nameof(BuyOrEquipPrefix));
         var e2 = MakePatch(harmony, typeof(abilityMenu), "CheckButton", nameof(CheckButtonPrefix));
         var e3 = MakePatch(harmony, typeof(abilityMenu), "OnSubmit", nameof(OnSubmitPrefix));

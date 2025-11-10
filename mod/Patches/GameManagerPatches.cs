@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using Archipelago.MultiClient.Net.BounceFeatures.DeathLink;
 using Archipelago.MultiClient.Net.Enums;
 using HarmonyLib;
@@ -8,7 +7,8 @@ namespace ArchipelagoClusterTruck.Patches;
 
 public class GameManagerPatches : ClassPatch
 {
-    static void LoseLevelPostFix(bool ___done)
+    private static int deaths = 0;
+    private static void LoseLevelPostFix(bool ___done)
     {
         if (ArchipelagoManager.DeathLinkSendingDeath)
         {
@@ -17,16 +17,21 @@ public class GameManagerPatches : ClassPatch
         }
         if(___done) return;
 #if VERBOSE
-        Plugin.Logger.LogInfo(new StackTrace());
+        Plugin.Logger.LogInfo(new System.Diagnostics.StackTrace());
 #endif
         if(!ArchipelagoManager.DeathLinkEnabled || ArchipelagoManager.Session == null) return;
 
-        Debug.Assert(ArchipelagoManager.SlotNumber != null, "ArchipelagoManager.SlotNumber != null");
-        ArchipelagoManager.DeathLinkService.SendDeathLink(new DeathLink(ArchipelagoManager.Session.Players.GetPlayerAlias(ArchipelagoManager.SlotNumber.Value)));
+        Plugin.Assert(ArchipelagoManager.SlotNumber != null, "ArchipelagoManager.SlotNumber != null");
+        if (++deaths < Plugin.Data.DeathsForDeathlink) return;
+        
+        deaths = 0;
+        ArchipelagoManager.DeathLinkService.SendDeathLink(
+            new DeathLink(ArchipelagoManager.Session.Players.GetPlayerAlias(ArchipelagoManager.SlotNumber.Value)));
     }
-    static void WinLevelPrefix()
+
+    private static void WinLevelPrefix()
     {
-        Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
+        Plugin.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         if (!Plugin.Data.CompletedLevels.Contains(info.currentLevel-1))
         {
             Plugin.Data.CompletedLevels.Add(info.currentLevel-1);
@@ -42,7 +47,7 @@ public class GameManagerPatches : ClassPatch
         ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"] = pointsHandler.Points;
     }
 
-    static void FinalBossBeatPostfix()
+    private static void FinalBossBeatPostfix()
     {
         WinLevelPrefix();
     }

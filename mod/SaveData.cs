@@ -7,7 +7,6 @@ using Archipelago.MultiClient.Net.Models;
 using ArchipelagoClusterTruck.Patches;
 using UnityEngine;
 using Color = UnityEngine.Color;
-using Debug = System.Diagnostics.Debug;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
@@ -17,14 +16,13 @@ public class SaveData
 {
     public SaveData()
     {
-        ArchipelagoManager.OnConnect += OnConnect;
         ArchipelagoManager.OnDisconnect += OnDisconnect;
     }
 
 
     private void ReceiveItem(ItemInfo item)
     {
-        int id = (int)(item.ItemId - BaseID);
+        var id = (int)(item.ItemId - BaseID);
         Plugin.Logger.LogInfo($"Received Item: {item.ItemName} ({id})");
         switch (id)
         {
@@ -52,7 +50,7 @@ public class SaveData
             case "Impulse":
                 if (!info.playing) break;
 
-                player p = Object.FindObjectOfType<player>();
+                var p = Object.FindObjectOfType<player>();
                 if (!p) break;
                 
                 p.rig.AddForce(Random.insideUnitSphere * 100);
@@ -60,7 +58,7 @@ public class SaveData
             case "Brake":
                 if(!info.playing) break;    
                 
-                car[] cars = Object.FindObjectsOfType<car>();
+                var cars = Object.FindObjectsOfType<car>();
                 foreach(var car in cars)
                     car.waitTime = Random.Range(10f, 20f);
                 
@@ -68,13 +66,18 @@ public class SaveData
         }
     }
 
-    void OnConnect()
+    private void OnConnect()
     {
-        Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
+        Plugin.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("base_id"),"ArchipelagoManager.SlotData.ContainsKey('base_id')");
         BaseID = Convert.ToInt64(ArchipelagoManager.SlotData["base_id"]);
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("goal_requirement"),"ArchipelagoManager.SlotData.ContainsKey('goal_requirement')");
         GoalRequirement = Convert.ToInt32(ArchipelagoManager.SlotData["goal_requirement"]);
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("point_multiplier"),"ArchipelagoManager.SlotData.ContainsKey('point_multiplier')");
         PointMultiplier = Convert.ToInt32(ArchipelagoManager.SlotData["point_multiplier"]);
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("deathlink_amnesty"),"ArchipelagoManager.SlotData.ContainsKey('deathlink_amnesty')");
+        DeathsForDeathlink = Convert.ToInt32(ArchipelagoManager.SlotData["deathlink_amnesty"]);
         
         ArchipelagoManager.Session.Items.ItemReceived += (item) => ReceiveItem(item.DequeueItem());
         while(ArchipelagoManager.Session.Items.DequeueItem() is { } item)
@@ -85,11 +88,11 @@ public class SaveData
         foreach (var item in ArchipelagoManager.Session.Items.AllItemsReceived)
             ReceiveItem(item);
         
-        string startString = ArchipelagoManager.SlotData["start"].ToString();
-        int start = 0;
+        var startString = ArchipelagoManager.SlotData["start"].ToString();
+        var start = 0;
         try
         {
-            string[] split = startString.Split('-');
+            var split = startString.Split('-');
             start = (int.Parse(split[0]) - 1) * 10 + int.Parse(split[1]) - 1;
         }
         catch (Exception ex)
@@ -105,11 +108,11 @@ public class SaveData
 
         AvailableLevels.Add(start);
 
-        string goalString = ArchipelagoManager.SlotData["goal"].ToString();
+        var goalString = ArchipelagoManager.SlotData["goal"].ToString();
         Goal = 0;
         try
         {
-            string[] split = goalString.Split('-');
+            var split = goalString.Split('-');
             Goal = (int.Parse(split[0]) - 1) * 10 + int.Parse(split[1]) - 1;
         }
         catch (Exception ex)
@@ -136,6 +139,9 @@ public class SaveData
             {
                 case < 90:
                     CompletedLevels.Add((int)id);
+                    // ensure someone on restart doesn't get soft-locked
+                    if (CompletedLevels.Count >= GoalRequirement)
+                        AvailableLevels.Add(Goal);
                     break;
                 case <= 103:
                 {
@@ -158,37 +164,51 @@ public class SaveData
         
         ArchipelagoManager.Session.Locations.ScoutLocationsAsync((itemInfo) =>
         {
+            Dictionary<info.Abilities, int> abilityAssertion = new();
+            foreach (var abilityObj in Enum.GetValues(typeof(info.Abilities)))
+            {
+                Plugin.Assert(abilityObj is info.Abilities, "abilityObj is info.Abilities");
+                var ability = (info.Abilities)(int)abilityObj;
+                abilityAssertion.Add(ability,0);
+            }
             foreach (var kvp in itemInfo)
             {
-                int abilityId = (int)(kvp.Key - BaseID-90);
-                info.Abilities ability = (info.Abilities)abilityId;
-                Color color = kvp.Value.Flags switch
+                var abilityId = (int)(kvp.Key - BaseID-90);
+                var ability = (info.Abilities)abilityId;
+                Plugin.Assert(Enum.IsDefined(typeof(info.Abilities),ability), "");
+                abilityAssertion[ability]++;
+                var color = kvp.Value.Flags switch
                 {
                     ItemFlags.Advancement => Configuration.Instance.ProgressionColor.Value,
                     ItemFlags.Trap  => Configuration.Instance.TrapColor.Value,
                     ItemFlags.NeverExclude => Configuration.Instance.UsefulColor.Value,
                     _ => Configuration.Instance.NormalColor.Value,
                 };
-                string colorString =
+                var colorString =
                     $"#{Mathf.RoundToInt(color.r * 255):X2}{Mathf.RoundToInt(color.g * 255):X2}{Mathf.RoundToInt(color.b * 255):X2}";
-                abilityHints.Add(ability,$"<color={colorString}> {kvp.Value.ItemDisplayName} ({kvp.Value.Player})</color>");
-                
+                abilityHintsTitle.Add(ability,$"{kvp.Value.Player}");
+                abilityHintsDescription.Add(ability,$"<color={colorString}> {kvp.Value.ItemDisplayName}</color>\nWas {ability}");
             }
-        },HintCreationPolicy.CreateAndAnnounceOnce,Enumerable.Range(90,103-90).Select(x=>BaseID+x).ToArray());
+
+            foreach (var kvp in abilityAssertion)
+                Plugin.Assert(kvp.Value == 1, $"{kvp.Key} was not seen");
+        },HintCreationPolicy.CreateAndAnnounceOnce,Enumerable.Range(90,103-89).Select(x=>BaseID+x).ToArray());
     }
 
-    void OnDisconnect()
+    private void OnDisconnect()
     {
         CompletedLevels.Clear();
         AvailableLevels.Clear();
         UnlockedAbilities.Clear();
         CheckedAbilities.Clear();
-        abilityHints.Clear();
+        abilityHintsTitle.Clear();
+        abilityHintsDescription.Clear();
     }
 
     public long BaseID;
 
     public int PointMultiplier;
+    public int DeathsForDeathlink;
     
     public int Goal = 0;
     public int GoalRequirement;
@@ -199,7 +219,8 @@ public class SaveData
     public readonly HashSet<info.Abilities> UnlockedAbilities = [];
     public readonly HashSet<info.Abilities> CheckedAbilities = [];
 
-    public readonly Dictionary<info.Abilities, string> abilityHints = new ();
+    public readonly Dictionary<info.Abilities, string> abilityHintsTitle = new ();
+    public readonly Dictionary<info.Abilities, string> abilityHintsDescription = new ();
 
 
 }

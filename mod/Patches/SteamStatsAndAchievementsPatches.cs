@@ -10,14 +10,15 @@ public class SteamStatsAndAchievementsPatches : ClassPatch
         "Update", "OnUserStatsReceived", "OnUserStatsStored", "OnAchievementStored", "ResetALL", "OnStatsUpdated",
         "OnEnable"
     ];
-    static bool Disable()
+
+    private static bool Disable()
     {
         return false;
     }
     public override Exception Patch(Harmony harmony)
     {
 
-        Type steamStatsAndAchievementsClass = typeof(SteamStatsAndAchievements);
+        var steamStatsAndAchievementsClass = typeof(SteamStatsAndAchievements);
         Exception e = null;
         foreach (var method in DisabledMethods)
         {

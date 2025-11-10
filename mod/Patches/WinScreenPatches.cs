@@ -11,19 +11,19 @@ namespace ArchipelagoClusterTruck.Patches;
 
 public class WinScreenPatches : ClassPatch
 {
-    static bool SmallEnablePrefix(leaderboardsManager __instance, string map, string PureRun = "")
+    private static bool SmallEnablePrefix(leaderboardsManager __instance, string map, string PureRun = "")
     {
         __instance.gameObject.SetActive(false);
         return false;
     }
 
-    static void ScoreScreenPrefix(scoreScreenHandler __instance)
+    private static void ScoreScreenPrefix(scoreScreenHandler __instance)
     {
-        Transform nextButton = __instance.transform.Find("scoreStuff/buttons/next");
+        var nextButton = __instance.transform.Find("scoreStuff/buttons/next");
         nextButton.GetComponentInChildren<Text>().text = "LEVEL SELECT";
-        EventTrigger trigger = nextButton.GetComponent<EventTrigger>();
-        pauseScreen pause = __instance.transform.parent.parent.Find("pause").GetComponent<pauseScreen>();
-        InvokableCall call = new InvokableCall(() =>
+        var trigger = nextButton.GetComponent<EventTrigger>();
+        var pause = __instance.transform.parent.parent.Find("pause").GetComponent<pauseScreen>();
+        var call = new InvokableCall(() =>
         {
             pause.LevelSelect();
             var lsh = Resources.FindObjectsOfTypeAll<LevelSeletHandler>().FirstOrDefault();

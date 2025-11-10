@@ -23,7 +23,7 @@ public static class ProxyHelper
     {
         EnsureProxyExecutable();
         
-        int port = FreeTcpPort();
+        var port = FreeTcpPort();
         Plugin.Logger.LogInfo($"Starting proxy on 127.0.0.1:{port} for {host}");
 
         ProcessStartInfo startInfo = new(ExePath)
@@ -37,21 +37,7 @@ public static class ProxyHelper
         var process = ProxyRunning = new Process() { StartInfo = startInfo, EnableRaisingEvents = true };
         
         ManualResetEvent mre = new(false);
-        
-        void KillProcess(object sender, EventArgs e)
-        {
-            if(!process.HasExited)
-                try
-                {
-                    process.Kill();
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Logger.LogError($"Failed to kill process '{process.StartInfo.FileName}': {ex}");
-                }
-            AppDomain.CurrentDomain.ProcessExit -= KillProcess;
-        }
-        
+
         process.OutputDataReceived += (_, args) =>
         {
             if(string.IsNullOrEmpty(args.Data))
@@ -91,24 +77,38 @@ public static class ProxyHelper
         AppDomain.CurrentDomain.ProcessExit += KillProcess;
         
         return port;
+
+        void KillProcess(object sender, EventArgs e)
+        {
+            if(!process.HasExited)
+                try
+                {
+                    process.Kill();
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Logger.LogError($"Failed to kill process '{process.StartInfo.FileName}': {ex}");
+                }
+            AppDomain.CurrentDomain.ProcessExit -= KillProcess;
+        }
     }
 
     
     // https://stackoverflow.com/a/150974
-    static int FreeTcpPort()
+    private static int FreeTcpPort()
     {
-      TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+      var l = new TcpListener(IPAddress.Loopback, 0);
       l.Start();
-      int port = ((IPEndPoint)l.LocalEndpoint).Port;
+      var port = ((IPEndPoint)l.LocalEndpoint).Port;
       l.Stop();
       return port;
     }
 
-    static void EnsureProxyExecutable()
+    private static void EnsureProxyExecutable()
     {
         Directory.CreateDirectory(Application.streamingAssetsPath);
-        Assembly assembly = Assembly.GetExecutingAssembly();
-        string resourcePath = assembly.GetManifestResourceNames().Single(str => str.EndsWith(ExeName));
+        var assembly = Assembly.GetExecutingAssembly();
+        var resourcePath = assembly.GetManifestResourceNames().Single(str => str.EndsWith(ExeName));
         if (File.Exists(ExePath))
         {
             string target;
@@ -139,11 +139,11 @@ public static class ProxyHelper
         using var outStream = File.OpenWrite(ExePath);
         const int bufferSize = 64 * 1024; // 64 kb
         var buffer = new byte[bufferSize];
-        long remaining = inStream.Length;
+        var remaining = inStream.Length;
         while (remaining > 0)
         {
-            int bytesToRead = (int)Math.Min(buffer.Length, remaining);
-            int bytesRead = inStream.Read(buffer, 0, bytesToRead);
+            var bytesToRead = (int)Math.Min(buffer.Length, remaining);
+            var bytesRead = inStream.Read(buffer, 0, bytesToRead);
             outStream.Write(buffer, 0, bytesRead);
             remaining -= bytesRead;
         }
@@ -151,14 +151,14 @@ public static class ProxyHelper
         if (Environment.OSVersion.Platform != PlatformID.Unix) return;
 
 
-        ProcessStartInfo chmodProcessInfo = new ProcessStartInfo("chmod", $"u+x {ExePath}")
+        var chmodProcessInfo = new ProcessStartInfo("chmod", $"u+x {ExePath}")
         {
             CreateNoWindow = true,
             UseShellExecute = false,
             RedirectStandardError = true,
         };
         var chmodProcess = Process.Start(chmodProcessInfo);
-        string error = chmodProcess.StandardError.ReadToEnd();
+        var error = chmodProcess.StandardError.ReadToEnd();
         chmodProcess!.WaitForExit();
         if (!string.IsNullOrEmpty(error))
         {

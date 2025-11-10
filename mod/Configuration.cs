@@ -7,7 +7,7 @@ namespace ArchipelagoClusterTruck;
 
 public class Configuration
 {
-    static Configuration _instance;
+    private static Configuration _instance;
     public static Configuration Instance => _instance ?? throw new NoNullAllowedException();
 
     internal Configuration(ConfigFile config)

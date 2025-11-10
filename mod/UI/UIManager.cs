@@ -30,13 +30,13 @@ public class UIManager : MonoBehaviour
         };
         ArchipelagoManager.OnConnect += OnArchipelagoConnect;
     }
-    
-    void OnArchipelagoConnect()
+
+    private void OnArchipelagoConnect()
     {
         Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         ArchipelagoManager.Session.MessageLog.OnMessageReceived += (message) =>
         {
-            string text = string.Join("", message.Parts.Select(part => ColorUtility.CreateRichColor(part.Text, part.IsBackgroundColor,part.Color)).ToArray());
+            var text = string.Join("", message.Parts.Select(part => ColorUtility.CreateRichColor(part.Text, part.IsBackgroundColor,part.Color)).ToArray());
 
             PushMessage(text);
         };
@@ -141,9 +141,9 @@ public class UIManager : MonoBehaviour
 
     private void DrawMessageLog()
     {
-        Rect fullScreen = new Rect(0, 0, Screen.width, Screen.height);
-        string messages = String.Empty;
-        LinkedListNode<string> current = _messages.First;
+        var fullScreen = new Rect(0, 0, Screen.width, Screen.height);
+        var messages = String.Empty;
+        var current = _messages.First;
         while (current != null)
         {
             messages += current.Value + "\n";
@@ -174,7 +174,7 @@ public class UIManager : MonoBehaviour
             return;
         }
         GUILayout.BeginHorizontal();
-        for (int i = 0; i < _tabs.Length; i++){
+        for (var i = 0; i < _tabs.Length; i++){
             if (GUILayout.Button(_tabs[i]))
             {
                 _debugTab = i;
@@ -200,18 +200,20 @@ public class UIManager : MonoBehaviour
         }
         GUI.DragWindow(_debugWindow);
     }
-    Vector2 _debugScroll = Vector2.zero;
-    void DebugDrawLocationTab()
+
+    private Vector2 _debugScroll = Vector2.zero;
+
+    private void DebugDrawLocationTab()
     {
         _debugScroll = GUILayout.BeginScrollView(_debugScroll);
         Debug.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
         foreach (var locationID in ArchipelagoManager.Session.Locations.AllLocations)
         {
-            bool check = ArchipelagoManager.Session.Locations.AllLocationsChecked.Contains(locationID);
-            string locationName = ArchipelagoManager.Session.Locations.GetLocationNameFromId(locationID);
+            var check = ArchipelagoManager.Session.Locations.AllLocationsChecked.Contains(locationID);
+            var locationName = ArchipelagoManager.Session.Locations.GetLocationNameFromId(locationID);
             GUILayout.BeginHorizontal();
             _debugStyle.normal.textColor = check ? Color.green : Color.white;
-            bool newCheck = GUILayout.Toggle(check, locationName, _debugStyle);
+            var newCheck = GUILayout.Toggle(check, locationName, _debugStyle);
             if (newCheck != check && newCheck)
             {
                 if(locationName == ArchipelagoManager.SlotData["goal"].ToString())
@@ -224,7 +226,7 @@ public class UIManager : MonoBehaviour
         GUILayout.EndScrollView();
     }
 
-    void DebugDrawSlotData()
+    private void DebugDrawSlotData()
     {
         _debugScroll = GUILayout.BeginScrollView(_debugScroll);
         foreach ( var slot in ArchipelagoManager.SlotData)
@@ -236,7 +238,8 @@ public class UIManager : MonoBehaviour
 
     private static readonly info.Abilities[] Abilities = Enum.GetValues(typeof(info.Abilities)).Cast<info.Abilities>().ToArray();
     private static readonly TextInfo EnUs = new CultureInfo("en-US", false).TextInfo;
-    void DebugDrawAbilities()
+
+    private void DebugDrawAbilities()
     {
         if (GUILayout.Button("+10000 points"))
         {
@@ -251,7 +254,7 @@ public class UIManager : MonoBehaviour
             GUILayout.BeginHorizontal();
             GUILayout.Label(EnUs.ToTitleCase(ability.ToString().Replace('_', ' ')),GUILayout.Width(150));
             GUI.changed = false;
-            bool check = GUILayout.Toggle(Plugin.Data.CheckedAbilities.Contains(ability),"Checked",GUILayout.Width(100));
+            var check = GUILayout.Toggle(Plugin.Data.CheckedAbilities.Contains(ability),"Checked",GUILayout.Width(100));
             if (GUI.changed)
             {
                 if(check)
@@ -260,7 +263,7 @@ public class UIManager : MonoBehaviour
                     Plugin.Data.CheckedAbilities.Remove(ability);
             }
             GUI.changed = false;
-            bool owned = GUILayout.Toggle(Plugin.Data.UnlockedAbilities.Contains(ability),"Unlocked",GUILayout.Width(100));
+            var owned = GUILayout.Toggle(Plugin.Data.UnlockedAbilities.Contains(ability),"Unlocked",GUILayout.Width(100));
             if (GUI.changed)
             {
                 if(owned)
@@ -274,14 +277,14 @@ public class UIManager : MonoBehaviour
         
     }
 
-    void DebugDrawLevels()
+    private void DebugDrawLevels()
     {
         _debugScroll = GUILayout.BeginScrollView(_debugScroll);
-        for (int i = 0; i <= 89; i++)
+        for (var i = 0; i <= 89; i++)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label($"{i/10+1}-{i%10+1}",GUILayout.Width(150));
-            bool check = GUILayout.Toggle(Plugin.Data.CompletedLevels.Contains(i),"Checked",GUILayout.Width(100));
+            var check = GUILayout.Toggle(Plugin.Data.CompletedLevels.Contains(i),"Checked",GUILayout.Width(100));
             if (GUI.changed)
             {
                 if(check)
@@ -290,7 +293,7 @@ public class UIManager : MonoBehaviour
                     Plugin.Data.CompletedLevels.Remove(i);
             }
             GUI.changed = false;
-            bool owned = GUILayout.Toggle(Plugin.Data.AvailableLevels.Contains(i),"Unlocked",GUILayout.Width(100));
+            var owned = GUILayout.Toggle(Plugin.Data.AvailableLevels.Contains(i),"Unlocked",GUILayout.Width(100));
             if (GUI.changed)
             {
                 if(owned)

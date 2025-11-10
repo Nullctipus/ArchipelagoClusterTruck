@@ -8,13 +8,13 @@ namespace ArchipelagoClusterTruck.Patches;
 public class steam_WorkshopHandlerPatches : ClassPatch
 {
     // disable leaderboard uploading
-    static bool onLeaderboardScoresDownloadedUploadScoresLaterPrefix(LeaderboardScoresDownloaded_t _Callresult,
+    private static bool onLeaderboardScoresDownloadedUploadScoresLaterPrefix(LeaderboardScoresDownloaded_t _Callresult,
         bool biofail)
     {
         return false;
     }
 
-    static bool UploadLeaderboardScorePrefix(SteamLeaderboard_t hSteamLeaderboard, ELeaderboardUploadScoreMethod eLeaderboardUploadScoreMethod, int nScore, int[] pScoreDetails, int cScoreDetailsCount)
+    private static bool UploadLeaderboardScorePrefix(SteamLeaderboard_t hSteamLeaderboard, ELeaderboardUploadScoreMethod eLeaderboardUploadScoreMethod, int nScore, int[] pScoreDetails, int cScoreDetailsCount)
     {
         return false;
     }

@@ -29,16 +29,16 @@ public class Player : ClassPatch
 
         __instance.framesSinceStart++;
         
-        float x = Input.GetAxis("Mouse X") * (options.invertedX ? -1f : 1f);
-        float y = -Input.GetAxis("Mouse Y") * (options.inverted ? -1f : 1f);
+        var x = Input.GetAxis("Mouse X") * (options.invertedX ? -1f : 1f);
+        var y = -Input.GetAxis("Mouse Y") * (options.inverted ? -1f : 1f);
         
         __instance.transform.Rotate(Vector3.up * x * player.sensitivity);
         __instance.camHolder.transform.Rotate(Vector3.right * y * player.sensitivity);
         
         
-        Vector3 movement = __instance.camHolder.forward * ((Input.GetButton("Forward") ? 1 : 0) - (Input.GetButton("Back") ? 1 : 0)) +
-                           __instance.camHolder.right * ((Input.GetButton("Right") ? 1 : 0) - (Input.GetButton("Left") ? 1 : 0)) +
-                           Vector3.up * ((Input.GetButton("Jump") ? 1 : 0) - (Input.GetKey(KeyCode.LeftControl) ? 1 : 0));
+        var movement = __instance.camHolder.forward * ((Input.GetButton("Forward") ? 1 : 0) - (Input.GetButton("Back") ? 1 : 0)) +
+                       __instance.camHolder.right * ((Input.GetButton("Right") ? 1 : 0) - (Input.GetButton("Left") ? 1 : 0)) +
+                       Vector3.up * ((Input.GetButton("Jump") ? 1 : 0) - (Input.GetKey(KeyCode.LeftControl) ? 1 : 0));
         
         __instance.transform.position += movement * Time.deltaTime * ___airSpeed * 2f * Configuration.Instance.NoclipSpeed.Value * (Input.GetButton("Sprint") ? 2.0f : 1.0f);
         

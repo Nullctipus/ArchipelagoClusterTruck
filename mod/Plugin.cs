@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
 using ArchipelagoClusterTruck.Patches;
 using ArchipelagoClusterTruck.UI;
 using BepInEx;
@@ -8,6 +9,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using System.Runtime.CompilerServices;
+using UnityEngine.Assertions;
 
 
 namespace ArchipelagoClusterTruck;
@@ -28,7 +31,7 @@ public class Plugin : BaseUnityPlugin
         _uiManager = gameObject.AddComponent<UIManager>();
         // Plugin startup logic
         PatchManager.PatchAll();
-        
+
         OnLevelWasLoaded(0);
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
@@ -38,12 +41,14 @@ public class Plugin : BaseUnityPlugin
         switch (SceneManager.GetActiveScene().name)
         {
             case "MainScene":
-                EventTrigger bigPlayButton = Resources.FindObjectsOfTypeAll<selectMe>().First(x => x.name == "play" && x.transform.parent.name == "Main").GetComponents<EventTrigger>().First(y=>y.triggers.Count == 2);
+                var bigPlayButton = Resources.FindObjectsOfTypeAll<selectMe>()
+                    .First(x => x.name == "play" && x.transform.parent.name == "Main").GetComponents<EventTrigger>()
+                    .First(y => y.triggers.Count == 2);
                 bigPlayButton.triggers[0].callback.m_Calls.Clear();
                 bigPlayButton.triggers[1].callback.m_Calls.Clear();
                 bigPlayButton.triggers[0].callback.m_PersistentCalls.Clear();
                 bigPlayButton.triggers[1].callback.m_PersistentCalls.Clear();
-                InvokableCall call = new InvokableCall(() =>
+                var call = new InvokableCall(() =>
                 {
                     if (ArchipelagoManager.Session != null)
                     {
@@ -51,12 +56,22 @@ public class Plugin : BaseUnityPlugin
                     }
                     else
                     {
-                        Logger.LogWarning("There is no Archipelago Session! stopping you to make sure your save data doesn't get deleted");
+                        Logger.LogWarning(
+                            "There is no Archipelago Session! stopping you to make sure your save data doesn't get deleted");
                     }
                 });
                 bigPlayButton.triggers[0].callback.m_Calls.AddListener(call);
                 bigPlayButton.triggers[1].callback.m_Calls.AddListener(call);
                 break;
         }
+    }
+
+    public static void Assert(bool condition, string message = null)
+    {
+        if (condition) return;
+        var st = new StackTrace();
+        Logger.LogError($"[ASSERTION FAILED]{(message == null ? (" "+message) : "")}\n{st}");
+        PopupHelper.MessageBox($"{(message == null ? (" "+message) : "")}\n{st}","Assert Failed!");
+        throw new AssertionException(message,message);
     }
 }

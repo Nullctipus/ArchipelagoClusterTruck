@@ -5,22 +5,23 @@ namespace ArchipelagoClusterTruck.Patches;
 
 public class pointsHandlerPatches : ClassPatch
 {
-    static bool StartPrefix(ref int ____currentPoints)
+    private static bool StartPrefix(ref int ____currentPoints)
     {
         ____currentPoints = 0;
         return false;
     }
 
-    static bool AddPointsPrefix(ref int ____currentPoints, float p)
+    private static bool AddPointsPrefix(ref int ____currentPoints, float p)
     {
-        if (p > 0) 
+        if (p > 0)
             p *= Plugin.Data.PointMultiplier;
-        
-        ____currentPoints+=(int) p;
+
+        var points = (int)p;
+        ____currentPoints = int.MaxValue - points < ____currentPoints ? int.MaxValue : ____currentPoints + points;
         return false;
     }
 
-    static bool ResetPointsPrefix(ref int ____currentPoints)
+    private static bool ResetPointsPrefix(ref int ____currentPoints)
     {
         ____currentPoints = 0;
         return false;
@@ -28,7 +29,7 @@ public class pointsHandlerPatches : ClassPatch
 
     public override Exception Patch(Harmony harmony)
     {
-        Type pointsHandlerType = typeof(pointsHandler);
+        var pointsHandlerType = typeof(pointsHandler);
         var e1 = MakePatch(harmony, pointsHandlerType, "Start", nameof(StartPrefix));
         var e2 = MakePatch(harmony, pointsHandlerType, "AddPoints", nameof(AddPointsPrefix));
         var e3 = MakePatch(harmony, pointsHandlerType, "ResetPoints", nameof(ResetPointsPrefix));

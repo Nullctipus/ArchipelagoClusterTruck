@@ -28,7 +28,7 @@ public static class ArchipelagoManager
     internal static event Action OnConnect;
     
     internal static DeathLinkService DeathLinkService;
-    static bool _deathLinkEnabled = false;
+    private static bool _deathLinkEnabled = false;
     public static bool DeathLinkEnabled
     {
         get => _deathLinkEnabled;
@@ -47,20 +47,21 @@ public static class ArchipelagoManager
     }
 
     internal static bool DeathLinkSendingDeath = false;
-    static void OnDeathLink(DeathLink deathLink)
+
+    private static void OnDeathLink(DeathLink deathLink)
     {
         #if VERBOSE
         Plugin.Logger.LogInfo($"Detected death link: {deathLink.Source} {deathLink.Cause} {deathLink.Timestamp.ToLocalTime()}");
         #endif
         Plugin._uiManager.PushMessage($"{deathLink.Source} died by <color=red>{deathLink.Cause}</color>");
         if(!info.playing) return;
-        GameManager gm = Object.FindObjectOfType<GameManager>();
+        var gm = Object.FindObjectOfType<GameManager>();
         if(!gm) return;
         DeathLinkSendingDeath = true;
         gm.LoseLevel();
     }
 
-    static void SetupSession()
+    private static void SetupSession()
     {
         Debug.Assert(Session != null, nameof(Session) + " != null");
         Session.Socket.SocketClosed += OnSocketClosed;
@@ -77,7 +78,7 @@ public static class ArchipelagoManager
         try
         {
 
-            int port = ProxyHelper.StartProxy(host);
+            var port = ProxyHelper.StartProxy(host);
             Session = ArchipelagoSessionFactory.CreateSession($"ws://127.0.0.1:{port}");
             SetupSession();
             result = Session!.TryConnectAndLogin(GameName, slotName, HandledItems, MinimumVersion, [],
@@ -101,19 +102,19 @@ public static class ArchipelagoManager
 
         if (!result.Successful)
         {
-            LoginFailure failure = (LoginFailure)result;
-            string errorMessage = $"Failed to connect to {host} as {slotName}:\n" + failure.Errors.Join(delimiter: "\n\t") +failure.ErrorCodes.Join(delimiter: "\n\t");
+            var failure = (LoginFailure)result;
+            var errorMessage = $"Failed to connect to {host} as {slotName}:\n" + failure.Errors.Join(delimiter: "\n\t") +failure.ErrorCodes.Join(delimiter: "\n\t");
             Plugin.Logger.LogError(errorMessage);
             return false;
         }
         
-        LoginSuccessful loginSuccessful = (LoginSuccessful)result;
+        var loginSuccessful = (LoginSuccessful)result;
         SlotNumber = loginSuccessful.Slot;
         TeamNumber = loginSuccessful.Team;
         SlotData = loginSuccessful.SlotData;
         Plugin.Logger.LogInfo($"Successfully connected to {host}\nGot slot number: {SlotNumber}\nTeam number: {TeamNumber}");
         #if VERBOSE
-        foreach (KeyValuePair<string, object> kvp in loginSuccessful.SlotData)
+        foreach (var kvp in loginSuccessful.SlotData)
         {
             try
             {
@@ -131,23 +132,24 @@ public static class ArchipelagoManager
     }
 
     #if VERBOSE
-    static void OnSentPacket(ArchipelagoPacketBase[] packets)
+    private static void OnSentPacket(ArchipelagoPacketBase[] packets)
     {
-        string joined = string.Join(", ", packets.Select(x=>$"{{{x}}}").ToArray());
+        var joined = string.Join(", ", packets.Select(x=>$"{{{x}}}").ToArray());
         Plugin.Logger.LogInfo($"Sent packet: {joined}");
     }
 
-    static void OnReceivedPacket(ArchipelagoPacketBase packet)
+    private static void OnReceivedPacket(ArchipelagoPacketBase packet)
     {
         Plugin.Logger.LogInfo($"Received packet: {packet}");
         
     }
     #endif
-    static void OnError(Exception exception, string errorMessage)
+    private static void OnError(Exception exception, string errorMessage)
     {
         Plugin.Logger.LogError($"{errorMessage}\n{exception}");
     }
-    static void OnSocketClosed(string reason)
+
+    private static void OnSocketClosed(string reason)
     {
         Plugin.Logger.LogWarning(new StackTrace());
         Plugin.Logger.LogWarning($"Socket closed: {reason}");

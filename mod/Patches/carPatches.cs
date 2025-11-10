@@ -6,10 +6,10 @@ namespace ArchipelagoClusterTruck.Patches;
 
 public class carPatches : ClassPatch
 {
-    static void StartPostFix(car __instance)
+    private static void StartPostFix(car __instance)
     {
         if(!Configuration.Instance.RandomTruckColor.Value) return;
-        Color c = ColorUtility.RandomColor();
+        var c = ColorUtility.RandomColor();
         __instance.rend1.material.color = c;
         __instance.rend2.material.color = c;
     }
