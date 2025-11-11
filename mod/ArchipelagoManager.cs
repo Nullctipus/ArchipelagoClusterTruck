@@ -170,13 +170,13 @@ public static class ArchipelagoManager
     public static void Check(int level,bool ace = false)
     {
         Debug.Assert(Session != null, nameof(Session) + " != null");
-        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + level + (ace ? 104 : 0));
+        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + level);
     }
 
     public static void Check(info.Abilities ability)
     {
         Debug.Assert(Session != null, nameof(Session) + " != null");
-        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + 90 + (int)ability);
+        Session.Locations.CompleteLocationChecksAsync((_) => { },Plugin.Data.BaseID + SaveData.LevelCount + (int)ability);
     }
 
 }

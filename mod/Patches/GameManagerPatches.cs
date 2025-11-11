@@ -32,13 +32,13 @@ public class GameManagerPatches : ClassPatch
     private static void WinLevelPrefix()
     {
         Plugin.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
-        if (!Plugin.Data.CompletedLevels.Contains(info.currentLevel-1))
+        if (!Plugin.Data.CompletedLevels.Contains(LevelSeletHandlerPatches.selectedLevel))
         {
-            Plugin.Data.CompletedLevels.Add(info.currentLevel-1);
-            if (Plugin.Data.Goal == info.currentLevel - 1)
+            Plugin.Data.CompletedLevels.Add(LevelSeletHandlerPatches.selectedLevel);
+            if (Plugin.Data.Goal == LevelSeletHandlerPatches.selectedLevel)
                 ArchipelagoManager.Session.SetGoalAchieved();
             else
-                ArchipelagoManager.Check(info.currentLevel - 1);
+                ArchipelagoManager.Check(LevelSeletHandlerPatches.selectedLevel);
             
             if (Plugin.Data.CompletedLevels.Count >= Plugin.Data.GoalRequirement)
                 Plugin.Data.AvailableLevels.Add(Plugin.Data.Goal);

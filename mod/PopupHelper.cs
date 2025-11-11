@@ -54,18 +54,22 @@ public static class PopupHelper
     {
         var zenityStartInfo = new ProcessStartInfo("zenity")
         {
-            Arguments = $"--error " +
-                        $"--text=\"{message}\" " +
-                        $"--title=\"{title}\" ",
-            UseShellExecute = false,
-            RedirectStandardError = true,
+            Arguments = $"--error --text=\"{message}\" --title=\"{title}\" ",
+            UseShellExecute = true,
+            RedirectStandardOutput = true,
         };
-        var zenity = Process.Start(zenityStartInfo);
-        zenity.WaitForExit();
-        if (zenity.ExitCode != 127) return;
+        using var zenity = Process.Start(zenityStartInfo);
+        zenity.OutputDataReceived += (sender, args) =>
+        {
+            if(string.IsNullOrEmpty(args.Data))
+                return;
+            Plugin.Logger.LogDebug(args.Data);
+        };
+        zenity?.WaitForExit();
+        if (zenity?.ExitCode != 127) return;
         var notifyStartInfo = new ProcessStartInfo("notify-send")
         {
-            Arguments = $"{title}: {message}"
+            Arguments = $"\"{title}\" \"{message}\""
         };
         // if it doesn't work I can't imagine the user's system
         Process.Start(notifyStartInfo);

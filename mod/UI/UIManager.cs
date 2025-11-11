@@ -181,6 +181,15 @@ public class UIManager : MonoBehaviour
                 Plugin.Logger.LogInfo("Switching tab "+ i);
             }
         }
+        if(GUILayout.Button("Test Assert"))
+            try
+            {
+                Plugin.Assert(false, "Test Assert");
+            }
+            catch
+            {
+                // ignored
+            } 
 
         GUILayout.EndHorizontal();
         switch (_debugTab)

@@ -17,7 +17,10 @@ public class pointsHandlerPatches : ClassPatch
             p *= Plugin.Data.PointMultiplier;
 
         var points = (int)p;
-        ____currentPoints = int.MaxValue - points < ____currentPoints ? int.MaxValue : ____currentPoints + points;
+        if (____currentPoints > int.MaxValue - points)
+            ____currentPoints = int.MaxValue;
+        else
+            ____currentPoints += points;
         return false;
     }
 

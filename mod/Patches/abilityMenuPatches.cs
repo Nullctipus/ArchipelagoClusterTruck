@@ -130,7 +130,8 @@ public class abilityMenuPatches : ClassPatch
              
              Plugin.Assert(Plugin.Data.abilityHintsTitle.ContainsKey(ability));
              Plugin.Assert(Plugin.Data.abilityHintsDescription.ContainsKey(ability));
-             string[] infoField = [Plugin.Data.abilityHintsTitle[ability],Plugin.Data.abilityHintsDescription[ability]];
+             
+             string[] infoField = [Plugin.Data.abilityHintsTitle[ability],Plugin.Data.abilityHintsDescription[ability] + $"\n{__instance.selectedButton.infoField[0]}:\n{__instance.selectedButton.infoField[1]}"];
              
             __instance.myUI.changeAbility(infoField, __instance.selectedButton.AbilityCost.ToString(),check);
         }

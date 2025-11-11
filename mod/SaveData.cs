@@ -14,6 +14,10 @@ namespace ArchipelagoClusterTruck;
 
 public class SaveData
 {
+    public const int LevelCount = 105;
+    public const int AbilityEnd = 118;
+    public const int FillerEnd = 122;
+
     public SaveData()
     {
         ArchipelagoManager.OnConnect += OnConnect;
@@ -27,15 +31,19 @@ public class SaveData
         Plugin.Logger.LogInfo($"Received Item: {item.ItemName} ({id})");
         switch (id)
         {
-            case < 90:
-                AvailableLevels.Add(id);
+            case < LevelCount:
+                if(!AvailableLevels.Contains(id))
+                    AvailableLevels.Add(id);
                 return;
-            case <= 103:
-                UnlockedAbilities.Add((info.Abilities)(id - 90));
+            case <= AbilityEnd:
+                UnlockedAbilities.Add((info.Abilities)(id - LevelCount));
                 return;
-            case <= 107:
+            case <= FillerEnd:
                 Plugin.Logger.LogInfo("Filler");
                 break;
+            default:
+                Plugin.Logger.LogError($"Unknown Item {id}");
+                return;
         }
 
         switch (item.ItemName)
@@ -80,6 +88,16 @@ public class SaveData
         Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("deathlink_amnesty"),"ArchipelagoManager.SlotData.ContainsKey('deathlink_amnesty')");
         DeathsForDeathlink = Convert.ToInt32(ArchipelagoManager.SlotData["deathlink_amnesty"]);
         
+        var startString = ArchipelagoManager.SlotData["start"].ToString();
+        var start = ParseLevelName(startString);
+
+        if (start is > LevelCount or < 0)
+        {
+            start = 0;
+            Plugin.Logger.LogError("Start level is out of range resetting to 0");
+        }
+
+        AvailableLevels.Add(start);
         ArchipelagoManager.Session.Items.ItemReceived += (item) => ReceiveItem(item.DequeueItem());
         while(ArchipelagoManager.Session.Items.DequeueItem() is { } item)
         {
@@ -89,39 +107,11 @@ public class SaveData
         foreach (var item in ArchipelagoManager.Session.Items.AllItemsReceived)
             ReceiveItem(item);
         
-        var startString = ArchipelagoManager.SlotData["start"].ToString();
-        var start = 0;
-        try
-        {
-            var split = startString.Split('-');
-            start = (int.Parse(split[0]) - 1) * 10 + int.Parse(split[1]) - 1;
-        }
-        catch (Exception ex)
-        {
-            Plugin.Logger.LogError($"Start level is not recognized: {ex}");
-        }
-
-        if (start > 100)
-        {
-            start = 0;
-            Plugin.Logger.LogError("Start level is out of range resetting to 0");
-        }
-
-        AvailableLevels.Add(start);
 
         var goalString = ArchipelagoManager.SlotData["goal"].ToString();
-        Goal = 0;
-        try
-        {
-            var split = goalString.Split('-');
-            Goal = (int.Parse(split[0]) - 1) * 10 + int.Parse(split[1]) - 1;
-        }
-        catch (Exception ex)
-        {
-            Plugin.Logger.LogError($"Goal level is not recognized: {ex}");
-        }
+        Goal = ParseLevelName(goalString);
 
-        if (Goal > 89)
+        if (Goal > LevelCount)
         {
             Goal = 89;
             Plugin.Logger.LogError("Goal level is out of range resetting to 89");
@@ -138,19 +128,19 @@ public class SaveData
             var id = location - BaseID;
             switch (id)
             {
-                case < 90:
+                case < LevelCount:
                     CompletedLevels.Add((int)id);
                     // ensure someone on restart doesn't get soft-locked
                     if (CompletedLevels.Count >= GoalRequirement)
                         AvailableLevels.Add(Goal);
                     break;
-                case <= 103:
+                case <= AbilityEnd:
                 {
-                    var ability = (info.Abilities)(id - 90);
+                    var ability = (info.Abilities)(id - LevelCount);
                     CheckedAbilities.Add(ability);
                     break;
                 }
-                case <= 107:
+                case <= FillerEnd:
                     break;  //Filler
                 default:
                     Plugin.Logger.LogError($"Unknown location: {id} - {ArchipelagoManager.Session.Locations.GetLocationNameFromId(id)}");
@@ -158,7 +148,10 @@ public class SaveData
             }
         }
         ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"].Initialize(0);
-        var points = ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"].To<int>();
+        var lpoints = ArchipelagoManager.Session.DataStorage[Scope.Slot, "points"].To<long>();
+        if (lpoints > int.MaxValue)
+            lpoints = int.MaxValue;
+        var points = (int)lpoints;
         
         pointsHandler.AddPoints(points - pointsHandler.Points);
         
@@ -174,7 +167,7 @@ public class SaveData
             }
             foreach (var kvp in itemInfo)
             {
-                var abilityId = (int)(kvp.Key - BaseID-90);
+                var abilityId = (int)(kvp.Key - BaseID-LevelCount);
                 var ability = (info.Abilities)abilityId;
                 Plugin.Assert(Enum.IsDefined(typeof(info.Abilities),ability), "");
                 abilityAssertion[ability]++;
@@ -188,12 +181,12 @@ public class SaveData
                 var colorString =
                     $"#{Mathf.RoundToInt(color.r * 255):X2}{Mathf.RoundToInt(color.g * 255):X2}{Mathf.RoundToInt(color.b * 255):X2}";
                 abilityHintsTitle.Add(ability,$"{kvp.Value.Player}");
-                abilityHintsDescription.Add(ability,$"<color={colorString}> {kvp.Value.ItemDisplayName}</color>\nWas {ability}");
+                abilityHintsDescription.Add(ability,$"<color={colorString}> {kvp.Value.ItemDisplayName}</color>");
             }
 
             foreach (var kvp in abilityAssertion)
                 Plugin.Assert(kvp.Value == 1, $"{kvp.Key} was not seen");
-        },HintCreationPolicy.CreateAndAnnounceOnce,Enumerable.Range(90,103-89).Select(x=>BaseID+x).ToArray());
+        },HintCreationPolicy.CreateAndAnnounceOnce,Enumerable.Range(LevelCount,AbilityEnd-104).Select(x=>BaseID+x).ToArray());
     }
 
     private void OnDisconnect()
@@ -215,7 +208,7 @@ public class SaveData
     public int GoalRequirement;
     
     public readonly HashSet<int> CompletedLevels = [];
-    public readonly HashSet<int> AvailableLevels = [];
+    public readonly List<int> AvailableLevels = [];
     
     public readonly HashSet<info.Abilities> UnlockedAbilities = [];
     public readonly HashSet<info.Abilities> CheckedAbilities = [];
@@ -224,4 +217,31 @@ public class SaveData
     public readonly Dictionary<info.Abilities, string> abilityHintsDescription = new ();
 
 
+    public static int ParseLevelName(string level)
+    {
+        var split = level.Split('-');
+        return split[0].ToLower() switch
+        {
+            "h" => 89 + int.Parse(split[1]),
+            "c" => 99 + int.Parse(split[1]),
+            _ => (int.Parse(split[0]) - 1) * 10 + int.Parse(split[1]) - 1
+        };
+    }
+
+    public static string FormatLevelName(int level)
+    {
+        switch (level)
+        {
+            case < 90:
+                var res = Math.DivRem(level, 10, out var rem);
+                return $"{res + 1}-{rem + 1}";
+            case <= 99:
+                return $"h-{level % 10 + 1}";
+            case <= 104:
+                return $"c-{level % 10 + 1}";
+            default:
+                Plugin.Logger.LogError($"Tried to parse bad level id {level}");
+                return "Unknown";
+        }
+    }
 }
