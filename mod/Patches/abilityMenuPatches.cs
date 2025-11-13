@@ -21,7 +21,7 @@ public class abilityMenuPatches : ClassPatch
 
     private static bool BuyOrEquipPrefix(abilityMenu __instance)
     {
-        var ability = (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton,null);
+        var ability = (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton, null);
         if (Plugin.Data.UnlockedAbilities.Contains(ability))
         {
             if (info.abilityName == __instance.selectedButton.name ||
@@ -29,7 +29,7 @@ public class abilityMenuPatches : ClassPatch
             {
                 if (!Plugin.Data.CheckedAbilities.Contains(ability) && pointsHandler.Points >= __instance.selectedButton.AbilityCost)
                 {
-                    CheckAbility(__instance,ability);
+                    CheckAbility(__instance, ability);
                 }
                 else
                 {
@@ -62,7 +62,7 @@ public class abilityMenuPatches : ClassPatch
         }
         else if (!Plugin.Data.CheckedAbilities.Contains(ability) && pointsHandler.Points >= __instance.selectedButton.AbilityCost)
         {
-            CheckAbility(__instance,ability);
+            CheckAbility(__instance, ability);
         }
         return false;
     }
@@ -98,24 +98,24 @@ public class abilityMenuPatches : ClassPatch
         {
             foreach (var text in b.GetComponentsInChildren<Text>())
                 text.color = new Color(0.2f, 0.2f, 0.2f, 1f);
-            
-            foreach (var image in b.GetComponentsInChildren<Image>().Where(x=> x.gameObject != b.gameObject))
+
+            foreach (var image in b.GetComponentsInChildren<Image>().Where(x => x.gameObject != b.gameObject))
                 image.color = new Color(0.2f, 0.2f, 0.2f, 1f);
         }
 
         b.colors = colors;
-        
+
         return false;
     }
 
     private static bool OnSubmitPrefix(abilityMenu __instance, BaseEventData p, ref GameObject ___lastObject)
     {
-        if (!p.selectedObject.CompareTag("ability"))
+        if (!p.selectedObject || !p.selectedObject.CompareTag("ability"))
             return false;
         var check = false;
         if (p.selectedObject.gameObject == ___lastObject)
-        { 
-            if(Plugin.Data.UnlockedAbilities.Contains(
+        {
+            if (Plugin.Data.UnlockedAbilities.Contains(
                    (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(p.selectedObject.GetComponent<abilityInfo>(), null)))
                 __instance.BuyOrEquip();
         }
@@ -125,15 +125,15 @@ public class abilityMenuPatches : ClassPatch
 
             var ability =
                 (info.Abilities)_abilityInfoAbilityEnumGetter.Invoke(__instance.selectedButton, null);
-             check =
-                Plugin.Data.CheckedAbilities.Contains(ability);
-             
-             Plugin.Assert(Plugin.Data.abilityHintsTitle.ContainsKey(ability));
-             Plugin.Assert(Plugin.Data.abilityHintsDescription.ContainsKey(ability));
-             
-             string[] infoField = [Plugin.Data.abilityHintsTitle[ability],Plugin.Data.abilityHintsDescription[ability] + $"\n{__instance.selectedButton.infoField[0]}:\n{__instance.selectedButton.infoField[1]}"];
-             
-            __instance.myUI.changeAbility(infoField, __instance.selectedButton.AbilityCost.ToString(),check);
+            check =
+               Plugin.Data.CheckedAbilities.Contains(ability);
+
+            Plugin.Assert(Plugin.Data.abilityHintsTitle.ContainsKey(ability), $"Title doesn't contain ability {ability}");
+            Plugin.Assert(Plugin.Data.abilityHintsDescription.ContainsKey(ability), $"Description doesn't contain {ability}");
+
+            string[] infoField = [Plugin.Data.abilityHintsTitle[ability], Plugin.Data.abilityHintsDescription[ability] + $"\n{__instance.selectedButton.infoField[0]}:\n{__instance.selectedButton.infoField[1]}"];
+
+            __instance.myUI.changeAbility(infoField, __instance.selectedButton.AbilityCost.ToString(), check);
         }
         check =
             Plugin.Data.CheckedAbilities.Contains(
@@ -149,11 +149,11 @@ public class abilityMenuPatches : ClassPatch
                         __instance.BuyOrEquip();
                     else
                         _abilityMenuSelectAbilityController.Invoke(__instance, [__instance.selectedButton]);
-                    
+
                 }
                 else
                     _abilityMenuSelectAbilityController.Invoke(__instance, [__instance.selectedButton]);
-                
+
             }
             else
             {
@@ -174,15 +174,15 @@ public class abilityMenuPatches : ClassPatch
     public override Exception Patch(Harmony harmony)
     {
         _abilityInfoAbilityEnumGetter = AccessTools.PropertyGetter(typeof(abilityInfo), "_abilityNumber");
-        Plugin.Assert(_abilityInfoAbilityEnumGetter != null);
+        Plugin.Assert(_abilityInfoAbilityEnumGetter != null, $"{nameof(_abilityInfoAbilityEnumGetter)} != null");
         _abilityMenuCheckButtons = AccessTools.Method(typeof(abilityMenu), "CheckButtons");
-        Plugin.Assert(_abilityMenuCheckButtons != null);
+        Plugin.Assert(_abilityMenuCheckButtons != null, $"{nameof(_abilityMenuCheckButtons)} != null");
         _abilityMenuSelectAbilityController = AccessTools.Method(typeof(abilityMenu), "SelectAbilityController");
-        Plugin.Assert(_abilityMenuSelectAbilityController != null);
+        Plugin.Assert(_abilityMenuSelectAbilityController != null, $"{nameof(_abilityMenuSelectAbilityController)} != null");
         var e1 = MakePatch(harmony, typeof(abilityMenu), "BuyOrEquip", nameof(BuyOrEquipPrefix));
         var e2 = MakePatch(harmony, typeof(abilityMenu), "CheckButton", nameof(CheckButtonPrefix));
         var e3 = MakePatch(harmony, typeof(abilityMenu), "OnSubmit", nameof(OnSubmitPrefix));
-        var e4 = MakePatch(harmony, typeof(abilityMenu), "OnEnable", null,nameof(OnEnablePostfix));
+        var e4 = MakePatch(harmony, typeof(abilityMenu), "OnEnable", null, nameof(OnEnablePostfix));
         return e1 ?? e2 ?? e3 ?? e4;
     }
 }

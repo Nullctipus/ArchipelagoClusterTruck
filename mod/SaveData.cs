@@ -32,7 +32,7 @@ public class SaveData
         switch (id)
         {
             case < LevelCount:
-                if(!AvailableLevels.Contains(id))
+                if (!AvailableLevels.Contains(id))
                     AvailableLevels.Add(id);
                 return;
             case <= AbilityEnd:
@@ -61,16 +61,16 @@ public class SaveData
 
                 var p = Object.FindObjectOfType<player>();
                 if (!p) break;
-                
+
                 p.rig.AddForce(Random.insideUnitSphere * 100);
                 break;
             case "Brake":
-                if(!info.playing) break;    
-                
+                if (!info.playing) break;
+
                 var cars = Object.FindObjectsOfType<car>();
-                foreach(var car in cars)
+                foreach (var car in cars)
                     car.waitTime = Random.Range(10f, 20f);
-                
+
                 break;
         }
     }
@@ -78,16 +78,16 @@ public class SaveData
     private void OnConnect()
     {
         Plugin.Assert(ArchipelagoManager.Session != null, "ArchipelagoManager.Session != null");
-        
-        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("base_id"),"ArchipelagoManager.SlotData.ContainsKey('base_id')");
+
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("base_id"), "ArchipelagoManager.SlotData.ContainsKey('base_id')");
         BaseID = Convert.ToInt64(ArchipelagoManager.SlotData["base_id"]);
-        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("goal_requirement"),"ArchipelagoManager.SlotData.ContainsKey('goal_requirement')");
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("goal_requirement"), "ArchipelagoManager.SlotData.ContainsKey('goal_requirement')");
         GoalRequirement = Convert.ToInt32(ArchipelagoManager.SlotData["goal_requirement"]);
-        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("point_multiplier"),"ArchipelagoManager.SlotData.ContainsKey('point_multiplier')");
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("point_multiplier"), "ArchipelagoManager.SlotData.ContainsKey('point_multiplier')");
         PointMultiplier = Convert.ToInt32(ArchipelagoManager.SlotData["point_multiplier"]);
-        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("deathlink_amnesty"),"ArchipelagoManager.SlotData.ContainsKey('deathlink_amnesty')");
+        Plugin.Assert(ArchipelagoManager.SlotData.ContainsKey("deathlink_amnesty"), "ArchipelagoManager.SlotData.ContainsKey('deathlink_amnesty')");
         DeathsForDeathlink = Convert.ToInt32(ArchipelagoManager.SlotData["deathlink_amnesty"]);
-        
+
         var startString = ArchipelagoManager.SlotData["start"].ToString();
         var start = ParseLevelName(startString);
 
@@ -99,14 +99,14 @@ public class SaveData
 
         AvailableLevels.Add(start);
         ArchipelagoManager.Session.Items.ItemReceived += (item) => ReceiveItem(item.DequeueItem());
-        while(ArchipelagoManager.Session.Items.DequeueItem() is { } item)
+        while (ArchipelagoManager.Session.Items.DequeueItem() is { } item)
         {
             ReceiveItem(item);
         }
         // In case we somehow missed anything
         foreach (var item in ArchipelagoManager.Session.Items.AllItemsReceived)
             ReceiveItem(item);
-        
+
 
         var goalString = ArchipelagoManager.SlotData["goal"].ToString();
         Goal = ParseLevelName(goalString);
@@ -116,13 +116,13 @@ public class SaveData
             Goal = 89;
             Plugin.Logger.LogError("Goal level is out of range resetting to 89");
         }
-        
+
         info.abilityName = string.Empty;
         PlayerPrefs.SetString(info.ABILITY_MOVEMENT_KEY, string.Empty);
         info.utilityName = string.Empty;
         PlayerPrefs.SetString(info.ABILITY_UTILITY_KEY, string.Empty);
 
-        
+
         foreach (var location in ArchipelagoManager.Session.Locations.AllLocationsChecked)
         {
             var id = location - BaseID;
@@ -135,11 +135,11 @@ public class SaveData
                         AvailableLevels.Add(Goal);
                     break;
                 case <= AbilityEnd:
-                {
-                    var ability = (info.Abilities)(id - LevelCount);
-                    CheckedAbilities.Add(ability);
-                    break;
-                }
+                    {
+                        var ability = (info.Abilities)(id - LevelCount);
+                        CheckedAbilities.Add(ability);
+                        break;
+                    }
                 case <= FillerEnd:
                     break;  //Filler
                 default:
@@ -152,10 +152,10 @@ public class SaveData
         if (lpoints > int.MaxValue)
             lpoints = int.MaxValue;
         var points = (int)lpoints;
-        
+
         pointsHandler.AddPoints(points - pointsHandler.Points);
-        
-        
+
+
         ArchipelagoManager.Session.Locations.ScoutLocationsAsync((itemInfo) =>
         {
             Dictionary<info.Abilities, int> abilityAssertion = new();
@@ -163,30 +163,30 @@ public class SaveData
             {
                 Plugin.Assert(abilityObj is info.Abilities, "abilityObj is info.Abilities");
                 var ability = (info.Abilities)(int)abilityObj;
-                abilityAssertion.Add(ability,0);
+                abilityAssertion.Add(ability, 0);
             }
             foreach (var kvp in itemInfo)
             {
-                var abilityId = (int)(kvp.Key - BaseID-LevelCount);
+                var abilityId = (int)(kvp.Key - BaseID - LevelCount);
                 var ability = (info.Abilities)abilityId;
-                Plugin.Assert(Enum.IsDefined(typeof(info.Abilities),ability), "");
+                Plugin.Assert(Enum.IsDefined(typeof(info.Abilities), ability), $"{ability} not defined in info.Abilities");
                 abilityAssertion[ability]++;
                 var color = kvp.Value.Flags switch
                 {
                     ItemFlags.Advancement => Configuration.Instance.ProgressionColor.Value,
-                    ItemFlags.Trap  => Configuration.Instance.TrapColor.Value,
+                    ItemFlags.Trap => Configuration.Instance.TrapColor.Value,
                     ItemFlags.NeverExclude => Configuration.Instance.UsefulColor.Value,
                     _ => Configuration.Instance.NormalColor.Value,
                 };
                 var colorString =
                     $"#{Mathf.RoundToInt(color.r * 255):X2}{Mathf.RoundToInt(color.g * 255):X2}{Mathf.RoundToInt(color.b * 255):X2}";
-                abilityHintsTitle.Add(ability,$"{kvp.Value.Player}");
-                abilityHintsDescription.Add(ability,$"<color={colorString}> {kvp.Value.ItemDisplayName}</color>");
+                abilityHintsTitle.Add(ability, $"{kvp.Value.Player}");
+                abilityHintsDescription.Add(ability, $"<color={colorString}> {kvp.Value.ItemDisplayName}</color>");
             }
 
             foreach (var kvp in abilityAssertion)
                 Plugin.Assert(kvp.Value == 1, $"{kvp.Key} was not seen");
-        },HintCreationPolicy.CreateAndAnnounceOnce,Enumerable.Range(LevelCount,AbilityEnd-104).Select(x=>BaseID+x).ToArray());
+        }, HintCreationPolicy.CreateAndAnnounceOnce, Enumerable.Range(LevelCount, AbilityEnd - 104).Select(x => BaseID + x).ToArray());
     }
 
     private void OnDisconnect()
@@ -203,18 +203,18 @@ public class SaveData
 
     public int PointMultiplier;
     public int DeathsForDeathlink;
-    
+
     public int Goal = 0;
     public int GoalRequirement;
-    
+
     public readonly HashSet<int> CompletedLevels = [];
     public readonly List<int> AvailableLevels = [];
-    
+
     public readonly HashSet<info.Abilities> UnlockedAbilities = [];
     public readonly HashSet<info.Abilities> CheckedAbilities = [];
 
-    public readonly Dictionary<info.Abilities, string> abilityHintsTitle = new ();
-    public readonly Dictionary<info.Abilities, string> abilityHintsDescription = new ();
+    public readonly Dictionary<info.Abilities, string> abilityHintsTitle = new();
+    public readonly Dictionary<info.Abilities, string> abilityHintsDescription = new();
 
 
     public static int ParseLevelName(string level)
