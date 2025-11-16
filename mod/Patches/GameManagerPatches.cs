@@ -15,15 +15,15 @@ public class GameManagerPatches : ClassPatch
             ArchipelagoManager.DeathLinkSendingDeath = false;
             return;
         }
-        if(___done) return;
+        if (___done) return;
 #if VERBOSE
         Plugin.Logger.LogInfo(new System.Diagnostics.StackTrace());
 #endif
-        if(!ArchipelagoManager.DeathLinkEnabled || ArchipelagoManager.Session == null) return;
+        if (!ArchipelagoManager.DeathLinkEnabled || ArchipelagoManager.Session == null) return;
 
         Plugin.Assert(ArchipelagoManager.SlotNumber != null, "ArchipelagoManager.SlotNumber != null");
         if (++deaths < Plugin.Data.DeathsForDeathlink) return;
-        
+
         deaths = 0;
         ArchipelagoManager.DeathLinkService.SendDeathLink(
             new DeathLink(ArchipelagoManager.Session.Players.GetPlayerAlias(ArchipelagoManager.SlotNumber.Value)));
@@ -39,8 +39,8 @@ public class GameManagerPatches : ClassPatch
                 ArchipelagoManager.Session.SetGoalAchieved();
             else
                 ArchipelagoManager.Check(LevelSeletHandlerPatches.selectedLevel);
-            
-            if (Plugin.Data.CompletedLevels.Count >= Plugin.Data.GoalRequirement)
+
+            if (Plugin.Data.CompletedLevels.Count >= Plugin.Data.GoalRequirement && !Plugin.Data.AvailableLevels.Contains(Plugin.Data.Goal))
                 Plugin.Data.AvailableLevels.Add(Plugin.Data.Goal);
         }
 
@@ -53,9 +53,9 @@ public class GameManagerPatches : ClassPatch
     }
     public override Exception Patch(Harmony harmony)
     {
-        var e1 = MakePatch(harmony,typeof(GameManager), nameof(GameManager.WinLevel),nameof(WinLevelPrefix));
+        var e1 = MakePatch(harmony, typeof(GameManager), nameof(GameManager.WinLevel), nameof(WinLevelPrefix));
         var e2 = MakePatch(harmony, typeof(GameManager), nameof(GameManager.LoseLevel), nameof(LoseLevelPostFix));
-        var e3 = MakePatch(harmony, typeof(LastBoss),"TheEnd",nameof(FinalBossBeatPostfix));
+        var e3 = MakePatch(harmony, typeof(LastBoss), "TheEnd", nameof(FinalBossBeatPostfix));
         return e1 ?? e2 ?? e3;
     }
 }
