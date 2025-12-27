@@ -70,8 +70,8 @@ public class Plugin : BaseUnityPlugin
     {
         if (condition) return;
         var st = new StackTrace();
-        Logger.LogError($"[ASSERTION FAILED]{(message == null ? (" " + message) : "")}\n{st}");
-        PopupHelper.MessageBox($"{(message == null ? (" " + message) : "")}\n{st}", "Assert Failed!");
+        Logger.LogError($"[ASSERTION FAILED]{(message != null ? (" " + message) : "")}\n{st}");
+        PopupHelper.MessageBox($"{(message != null ? (" " + message) : "")}\n{st}", "Assert Failed!");
         //throw new AssertionException(message, message);
     }
 }
